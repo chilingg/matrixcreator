@@ -24,6 +24,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    matrixmodel.cpp \
+    matrixview.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    matrixmodel.h \
+    matrixview.h
