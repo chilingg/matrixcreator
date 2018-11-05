@@ -6,7 +6,7 @@ MainWindow::MainWindow(QWidget *parent)
       view(new MatrixView(this))
 {
     setWindowTitle(tr("MatrixCreator"));
-    resize(840, 840);
+    resize(840, 720);
     setCentralWidget(view);
 }
 
