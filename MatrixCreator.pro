@@ -30,4 +30,5 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     matrixmodel.h \
-    matrixview.h
+    matrixview.h \
+    constants.h

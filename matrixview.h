@@ -9,6 +9,14 @@ class MatrixView : public QWidget
 
 public:
     MatrixView(QWidget *parent = 0);
+
+protected:
+    void paintEvent(QPaintEvent *);
+
+private:
+    int baseUnit;
+    const QRgb died;
+    const QRgb lived;
 };
 
 #endif // MATRIXVIEW_H
