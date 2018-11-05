@@ -3,10 +3,12 @@
 
 #include <QWidget>
 
-class MatrixView
+class MatrixView : public QWidget
 {
+    Q_OBJECT
+
 public:
-    MatrixView();
+    MatrixView(QWidget *parent = 0);
 };
 
 #endif // MATRIXVIEW_H

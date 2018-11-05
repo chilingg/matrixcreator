@@ -1,6 +1,7 @@
 #include "matrixview.h"
 
-MatrixView::MatrixView()
+MatrixView::MatrixView(QWidget *parent)
+    :QWidget(parent)
 {
 
 }
