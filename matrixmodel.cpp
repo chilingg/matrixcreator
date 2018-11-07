@@ -1,3 +1,5 @@
+#include <QDebug>
+
 #include "matrixmodel.h"
 
 MatrixModel::MatrixModel(int )
@@ -17,9 +19,12 @@ MatrixModel::MatrixModel(int )
     }
 }
 
-int MatrixModel::getModelValue(int x, int y, int offsetX, int offsetY)
+int MatrixModel::getModelValue(int x, int y)
 {
-    return (model[x + offsetX][y + offsetY]);
+    if(x > WORLDSIZE || y > WORLDSIZE)
+        qDebug() << "Over range!" << x << y;
+
+    return (model[x][y]);
 
 }
 
@@ -36,4 +41,12 @@ void MatrixModel::updateModel()
                 model[i][j] = 0;
         }
     }
+}
+
+void MatrixModel::changeModelValue(int x, int y, int value)
+{
+    if(x > WORLDSIZE || y > WORLDSIZE)
+        qDebug() << "Over range!" << x << y;
+
+    model[x][y] = !model[x][y];
 }

@@ -37,6 +37,9 @@ private:
     //视图与模型坐标偏移量
     int modelOffsetX;
     int modelOffsetY;
+
+    int modelColumn;
+    int modelRow;
 };
 
 #endif // MATRIXVIEW_H

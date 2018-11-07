@@ -18,11 +18,13 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     setAutoFillBackground(true);
     setPalette(pal);
 
-    baseUnitSize = 64;
+    baseUnitSize = 60;
     viewOffsetX = 0;
     viewOffsetY = 0;
     modelOffsetX = WORLDSIZE / 2;
     modelOffsetY = WORLDSIZE / 2;
+    modelColumn = 0;
+    modelRow = 0;
 }
 
 void MatrixView::paintEvent(QPaintEvent *)
@@ -30,8 +32,8 @@ void MatrixView::paintEvent(QPaintEvent *)
     QPainter painter(this);
 
     //计算视图中的模型行列
-    int modelColumn = 0;
-    int modelRow = 0;
+    modelColumn = 0;
+    modelRow = 0;
     while (modelColumn * baseUnitSize < width() - baseUnitSize)
         ++modelColumn;
     while (modelRow * baseUnitSize < height() - baseUnitSize)
@@ -62,7 +64,7 @@ void MatrixView::paintEvent(QPaintEvent *)
             QRgb color;
 
             //Get modeldata and select color
-            int value = model->getModelValue(i, j, modelOffsetX, modelOffsetY);
+            int value = model->getModelValue(i + modelOffsetX, j + modelOffsetY);
             if(value == died)
                 color = dieColor;
             else if(value == lived)
@@ -70,7 +72,7 @@ void MatrixView::paintEvent(QPaintEvent *)
             else
                 color = qRgb(255, 0, 0);
 
-            //qDebug() << i << j << value << "-->This is color()";
+            //qDebug() << i << j << value << "-->This is value()";
             drawBaseUnit(i * baseUnitSize, j * baseUnitSize, color, image);
         }
     }
@@ -93,8 +95,17 @@ void MatrixView::mousePressEvent(QMouseEvent *event)
         //获取偏移修正后的点击处对应的视图中的矩形坐标
         int x = event->pos().x() - viewOffsetX;
         int y = event->pos().y() - viewOffsetY;
-        qDebug() << x / baseUnitSize << "-->pos().x";
-        qDebug() << y / baseUnitSize << "-->pos().y";
+        if (x > 0 && x < modelColumn * baseUnitSize)
+            if (y > 0 && y < modelColumn * baseUnitSize)
+            {
+                //点击的单元转换为相反状态
+                model->changeModelValue(x / baseUnitSize + modelOffsetX,
+                                        y / baseUnitSize + modelOffsetY, 0);
+                update();
+            }
+
+        qDebug() << x / baseUnitSize << x << "-->pos().x";
+        qDebug() << y / baseUnitSize << y << "-->pos().y";
     }
 }
 
