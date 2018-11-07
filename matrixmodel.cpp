@@ -17,9 +17,9 @@ MatrixModel::MatrixModel(int )
     }
 }
 
-int MatrixModel::getModelValue(int x, int y)
+int MatrixModel::getModelValue(int x, int y, int offsetX, int offsetY)
 {
-    return (model[x][y]);
+    return (model[x + offsetX][y + offsetY]);
 
 }
 

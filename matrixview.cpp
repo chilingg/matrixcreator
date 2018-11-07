@@ -1,33 +1,68 @@
 #include "matrixview.h"
-#include "constants.h"
 
 #include <QDebug>
 #include <QPainter>
+#include <QMouseEvent>
 
 MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     :QWidget(parent),
       died(0),
       lived(1),
-      dieColor(qRgb(7, 0, 0)),
-      liveColer(qRgb(204, 204, 204)),
+      dieColor(qRgb(0, 0, 0)),
+      liveColer(qRgb(255, 255, 255)),
       model(model)
 {
-    baseUnitSize = 32;
+    //Set window backgroundcolor
+    QPalette pal = palette();
+    pal.setColor(QPalette::Background, QColor(51, 51, 51));
+    setAutoFillBackground(true);
+    setPalette(pal);
+
+    baseUnitSize = 64;
+    viewOffsetX = 0;
+    viewOffsetY = 0;
+    modelOffsetX = WORLDSIZE / 2;
+    modelOffsetY = WORLDSIZE / 2;
 }
 
 void MatrixView::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
-    QImage image(size(), QImage::Format_RGB32);
-    painter.drawLine(0, 0, 100, 100);//Test
 
-    for(int i = 0; i * baseUnitSize < width() - baseUnitSize; ++i)
+    //计算视图中的模型行列
+    int modelColumn = 0;
+    int modelRow = 0;
+    while (modelColumn * baseUnitSize < width() - baseUnitSize)
+        ++modelColumn;
+    while (modelRow * baseUnitSize < height() - baseUnitSize)
+        ++modelRow;
+
+    if(modelOffsetX + modelColumn > WORLDSIZE)
+        modelOffsetX = WORLDSIZE - modelColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
+    if(modelOffsetX < 0)
     {
-        for(int j = 0; j * baseUnitSize < height() - baseUnitSize; ++j)
+        modelOffsetX = 0;
+        modelColumn = WORLDSIZE;
+    }//检查模型列是否小于视图列，若是则更改视图大小
+
+    if(modelOffsetY + modelRow > WORLDSIZE)
+        modelOffsetY = WORLDSIZE - modelRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
+    if(modelOffsetY < 0)
+    {
+        modelOffsetY = 0;
+        modelRow = WORLDSIZE;
+    }//检查模型行是否小于视图行，若是则更改视图大小
+
+    QImage image(modelColumn * baseUnitSize, modelRow * baseUnitSize, QImage::Format_RGB32);
+
+    for(int i = 0; i < modelColumn; ++i)
+    {
+        for(int j = 0; j < modelRow; ++j)
         {
             QRgb color;
-            int value = model->getModelValue(i, j);
 
+            //Get modeldata and select color
+            int value = model->getModelValue(i, j, modelOffsetX, modelOffsetY);
             if(value == died)
                 color = dieColor;
             else if(value == lived)
@@ -35,16 +70,32 @@ void MatrixView::paintEvent(QPaintEvent *)
             else
                 color = qRgb(255, 0, 0);
 
-            qDebug() << i << j << value << "-->This is color()";
+            //qDebug() << i << j << value << "-->This is color()";
             drawBaseUnit(i * baseUnitSize, j * baseUnitSize, color, image);
         }
     }
 
-    painter.drawImage(0, 0, image);
-    referenceLine(painter);
+    //添加坐标偏移，使模型居中于视图
+    viewOffsetX = (width() - modelColumn * baseUnitSize) / 2;
+    viewOffsetY = (height() - modelRow * baseUnitSize) / 2;
+    painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
-    qDebug() << width() << "-->This is width()";
+    painter.drawImage(0, 0, image);//绘制View
+    //referenceLine(painter); //绘制参考线
+
     qDebug() << size() << "-->This is size()";
+}
+
+void MatrixView::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        //获取偏移修正后的点击处对应的视图中的矩形坐标
+        int x = event->pos().x() - viewOffsetX;
+        int y = event->pos().y() - viewOffsetY;
+        qDebug() << x / baseUnitSize << "-->pos().x";
+        qDebug() << y / baseUnitSize << "-->pos().y";
+    }
 }
 
 void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
@@ -53,7 +104,7 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
     {
         for(int j = y; j < y + baseUnitSize; ++j)
         {
-            image.setPixel(i, j, color); //qRgb(255,0,0)
+            image.setPixel(i, j, color); //以一个个像素点绘制基础单元
         }
     }
 }
