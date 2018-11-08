@@ -10,10 +10,15 @@ class MatrixView : public QWidget
 
 public:
     MatrixView(MatrixModel *model, QWidget *parent = 0);
+    int getViewOffsetX() const;
+    int getViewOffsetY() const;
+    int getModelColumn() const;
+    int getModelRow() const;
+    int getBaseUnitSize() const;
+    bool pointViewToModel(int &x, int &y);//返回view坐标中对应的model坐标
 
 protected:
     void paintEvent(QPaintEvent *);
-    void mousePressEvent(QMouseEvent *event);
 
 private:
     void drawBaseUnit(int x, int y, QRgb color, QImage &image);//按baseUnitSize绘制基础单元

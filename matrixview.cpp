@@ -2,7 +2,6 @@
 
 #include <QDebug>
 #include <QPainter>
-#include <QMouseEvent>
 
 MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     :QWidget(parent),
@@ -18,13 +17,58 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     setAutoFillBackground(true);
     setPalette(pal);
 
-    baseUnitSize = 60;
+    baseUnitSize = 16;
     viewOffsetX = 0;
     viewOffsetY = 0;
     modelOffsetX = WORLDSIZE / 2;
     modelOffsetY = WORLDSIZE / 2;
     modelColumn = 0;
     modelRow = 0;
+}
+
+int MatrixView::getModelColumn() const
+{
+    return modelColumn;
+}
+
+int MatrixView::getModelRow() const
+{
+    return modelRow;
+}
+
+int MatrixView::getBaseUnitSize() const
+{
+    return baseUnitSize;
+}
+
+bool MatrixView::pointViewToModel(int &x, int &y)
+{
+    //判断点击是否发生在view范围内
+    if (x > 0 && x < modelColumn * baseUnitSize)
+    {
+        if (y > 0 && y < modelColumn * baseUnitSize)
+        {
+            x = x / baseUnitSize + modelOffsetX;
+            y = y / baseUnitSize + modelOffsetX;
+
+            return true;
+        }
+    }
+
+    qDebug() << "Point over!";
+    qDebug() << x / baseUnitSize << x << "-->pos().x";
+    qDebug() << y / baseUnitSize << y << "-->pos().y";
+    return false;
+}
+
+int MatrixView::getViewOffsetX() const
+{
+    return viewOffsetX;
+}
+
+int MatrixView::getViewOffsetY() const
+{
+    return viewOffsetY;
 }
 
 void MatrixView::paintEvent(QPaintEvent *)
@@ -83,30 +127,9 @@ void MatrixView::paintEvent(QPaintEvent *)
     painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
     painter.drawImage(0, 0, image);//绘制View
-    //referenceLine(painter); //绘制参考线
+    referenceLine(painter); //绘制参考线
 
-    qDebug() << size() << "-->This is size()";
-}
-
-void MatrixView::mousePressEvent(QMouseEvent *event)
-{
-    if (event->button() == Qt::LeftButton)
-    {
-        //获取偏移修正后的点击处对应的视图中的矩形坐标
-        int x = event->pos().x() - viewOffsetX;
-        int y = event->pos().y() - viewOffsetY;
-        if (x > 0 && x < modelColumn * baseUnitSize)
-            if (y > 0 && y < modelColumn * baseUnitSize)
-            {
-                //点击的单元转换为相反状态
-                model->changeModelValue(x / baseUnitSize + modelOffsetX,
-                                        y / baseUnitSize + modelOffsetY, 0);
-                update();
-            }
-
-        qDebug() << x / baseUnitSize << x << "-->pos().x";
-        qDebug() << y / baseUnitSize << y << "-->pos().y";
-    }
+    //qDebug() << size() << "-->This is size()";
 }
 
 void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
@@ -122,13 +145,13 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 
 void MatrixView::referenceLine(QPainter &painter)
 {
-    for(int i = 0; i < width(); i += baseUnitSize)
+    for(int i = 0; i < modelColumn * baseUnitSize; i += baseUnitSize)
     {
-        for(int j = 0; j < width(); j += baseUnitSize)
+        for(int j = 0; j < modelRow * baseUnitSize; j += baseUnitSize)
         {
             painter.setPen(Qt::gray);
-            painter.drawLine(i, j, i, height());
-            painter.drawLine(i, j, width(), j);
+            painter.drawLine(i, j, i, modelColumn * baseUnitSize);
+            painter.drawLine(i, j, modelRow * baseUnitSize, j);
         }
     }
 }
