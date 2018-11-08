@@ -145,13 +145,13 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 
 void MatrixView::referenceLine(QPainter &painter)
 {
-    for(int i = 0; i < modelColumn * baseUnitSize; i += baseUnitSize)
+    for(int i = baseUnitSize; i < modelColumn * baseUnitSize; i += baseUnitSize)
     {
-        for(int j = 0; j < modelRow * baseUnitSize; j += baseUnitSize)
+        for(int j = baseUnitSize; j < modelRow * baseUnitSize; j += baseUnitSize)
         {
-            painter.setPen(Qt::gray);
-            painter.drawLine(i, j, i, modelColumn * baseUnitSize);
-            painter.drawLine(i, j, modelRow * baseUnitSize, j);
+            painter.setPen(QColor(51, 51, 51));
+            painter.drawLine(i, j - baseUnitSize, i, modelColumn * baseUnitSize);
+            painter.drawLine(i - baseUnitSize, j, modelRow * baseUnitSize, j);
         }
     }
 }

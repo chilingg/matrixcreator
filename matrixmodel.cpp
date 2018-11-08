@@ -2,13 +2,16 @@
 
 #include "matrixmodel.h"
 
-MatrixModel::MatrixModel()
+MatrixModel::MatrixModel():
+    currentModel(model1),
+    tempModel(model2)
 {
     for(int i = 0; i < WORLDSIZE; ++i)
     {
         for(int j = 0; j < WORLDSIZE; ++j)
         {
-            model[i][j] = 0;
+            currentModel[i][j] = 0;
+            tempModel[i][j] = 0;
         }
     }//初始化数组为0
 }
@@ -18,7 +21,7 @@ int MatrixModel::getModelValue(int x, int y)
     if(x > WORLDSIZE || y > WORLDSIZE)
         qDebug() << "Over range!" << x << y;
 
-    return (model[x][y]);
+    return (currentModel[x][y]);
 
 }
 
@@ -30,7 +33,10 @@ void MatrixModel::updateModel()
         for(int j = 0; j < WORLDSIZE; ++j)
         {
             int aroundValue = getAroundValue(i, j);
-            aroundValue += model[i][j] ? 10 : 0;//aroundValue大于8则当前状态为生
+            aroundValue += currentModel[i][j] ? 10 : 0;//aroundValue大于8则当前状态为生
+
+            //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
+            tempModel[i][j] = currentModel[i][j];
             switch (aroundValue)
             {
             case 0:
@@ -38,7 +44,7 @@ void MatrixModel::updateModel()
             case 2:
                 break;
             case 3:
-                model[i][j] = 1;
+                tempModel[i][j] = 1;
                 break;
             case 4:
             case 5:
@@ -48,7 +54,7 @@ void MatrixModel::updateModel()
                 break;
             case 10:
             case 11:
-                model[i][j] = 0;
+                tempModel[i][j] = 0;
                 break;
             case 12:
             case 13:
@@ -58,7 +64,7 @@ void MatrixModel::updateModel()
             case 16:
             case 17:
             case 18:
-                model[i][j] = 0;
+                tempModel[i][j] = 0;
                 break;
             default:
                 qDebug() << "AroundValue Over range!" << aroundValue ;
@@ -66,6 +72,10 @@ void MatrixModel::updateModel()
             }
         }
     }
+    //把current指向新模型，temp指向旧模型
+    int(* tempP)[WORLDSIZE] = currentModel;
+    currentModel = tempModel;
+    tempModel = tempP;
 }
 
 void MatrixModel::changeModelValue(int x, int y)
@@ -73,7 +83,7 @@ void MatrixModel::changeModelValue(int x, int y)
     if(x > WORLDSIZE || y > WORLDSIZE)
         qDebug() << "Over range!" << x << y;
 
-    model[x][y] = !model[x][y];
+    currentModel[x][y] = !currentModel[x][y];
 }
 
 int MatrixModel::getAroundValue(int x, int y)
@@ -102,14 +112,14 @@ int MatrixModel::getAroundValue(int x, int y)
     int around_9X = x != WORLDSIZE - 1 ? x + 1 : 0;
     int around_9Y = y != WORLDSIZE - 1 ? y + 1 : 0;
 
-    int aroundValue = model[around_1X][around_1Y]
-            + model[around_2X][around_2Y]
-            + model[around_3X][around_3Y]
-            + model[around_4X][around_4Y]
-            + model[around_7X][around_7Y]
-            + model[around_8X][around_8Y]
-            + model[around_9X][around_9Y]
-            + model[around_6X][around_6Y];
+    int aroundValue = currentModel[around_1X][around_1Y]
+            + currentModel[around_2X][around_2Y]
+            + currentModel[around_3X][around_3Y]
+            + currentModel[around_4X][around_4Y]
+            + currentModel[around_7X][around_7Y]
+            + currentModel[around_8X][around_8Y]
+            + currentModel[around_9X][around_9Y]
+            + currentModel[around_6X][around_6Y];
 
     return aroundValue;
 }

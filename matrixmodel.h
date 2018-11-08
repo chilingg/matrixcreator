@@ -13,8 +13,11 @@ public:
     int getAroundValue(int x, int y);
 
 private:
-    int model[WORLDSIZE][WORLDSIZE];
+    int model1[WORLDSIZE][WORLDSIZE];
     int model2[WORLDSIZE][WORLDSIZE];
+
+    int(* currentModel)[WORLDSIZE];
+    int(* tempModel)[WORLDSIZE];
 };
 
 #endif // MATRIXMODEL_H

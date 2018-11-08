@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     resize(840, 720);
     setCentralWidget(view);
 
-    startTimer(1000/2);
+    startTimer(1000/4);
     start = false;
 }
 
