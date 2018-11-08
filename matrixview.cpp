@@ -17,7 +17,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     setAutoFillBackground(true);
     setPalette(pal);
 
-    baseUnitSize = 16;
+    baseUnitSize = 12;
     viewOffsetX = 0;
     viewOffsetY = 0;
     modelOffsetX = WORLDSIZE / 2;
@@ -49,7 +49,7 @@ bool MatrixView::pointViewToModel(int &x, int &y)
         if (y > 0 && y < modelColumn * baseUnitSize)
         {
             x = x / baseUnitSize + modelOffsetX;
-            y = y / baseUnitSize + modelOffsetX;
+            y = y / baseUnitSize + modelOffsetY;
 
             return true;
         }
@@ -147,11 +147,22 @@ void MatrixView::referenceLine(QPainter &painter)
 {
     for(int i = baseUnitSize; i < modelColumn * baseUnitSize; i += baseUnitSize)
     {
-        for(int j = baseUnitSize; j < modelRow * baseUnitSize; j += baseUnitSize)
-        {
-            painter.setPen(QColor(51, 51, 51));
-            painter.drawLine(i, j - baseUnitSize, i, modelColumn * baseUnitSize);
-            painter.drawLine(i - baseUnitSize, j, modelRow * baseUnitSize, j);
-        }
+        if(i / baseUnitSize % 10 != 0)
+            painter.setPen(QColor(17, 17, 17));
+        else
+            painter.setPen(QColor(34, 34, 34));
+
+        painter.drawLine(i, 0, i, modelRow * baseUnitSize);//绘制列
+    }
+
+    for(int j = baseUnitSize; j < modelRow * baseUnitSize; j += baseUnitSize)
+    {
+        if(j / baseUnitSize % 10 != 0)
+            painter.setPen(QColor(17, 17, 17));
+        else
+            painter.setPen(QColor(34, 34, 34));
+
+        painter.drawLine(0, j, modelColumn * baseUnitSize, j);//绘制行
+        //qDebug() << i << j - baseUnitSize << modelColumn * baseUnitSize;
     }
 }
