@@ -7,17 +7,18 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     :QWidget(parent),
       died(0),
       lived(1),
-      dieColor(qRgb(0, 0, 0)),
-      liveColer(qRgb(255, 255, 255)),
+      dieColor(VIEW::LUMINOSITY_0_0.rgb()),
+      liveColer(VIEW::LUMINOSITY_5_255.rgb()),
       model(model)
 {
     //Set window backgroundcolor
     QPalette pal = palette();
-    pal.setColor(QPalette::Background, QColor(51, 51, 51));
+    pal.setColor(QPalette::Background, VIEW::LUMINOSITY_1_51);
     setAutoFillBackground(true);
     setPalette(pal);
 
-    baseUnitSize = 12;
+    baseUnitSize = 10;//默认的一个单元大小
+
     viewOffsetX = 0;
     viewOffsetY = 0;
     modelOffsetX = WORLDSIZE / 2;
@@ -145,24 +146,30 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 
 void MatrixView::referenceLine(QPainter &painter)
 {
-    for(int i = baseUnitSize; i < modelColumn * baseUnitSize; i += baseUnitSize)
-    {
-        if(i / baseUnitSize % 10 != 0)
-            painter.setPen(QColor(17, 17, 17));
-        else
-            painter.setPen(QColor(34, 34, 34));
+    int referenceLineSize = baseUnitSize >= 10 ? baseUnitSize : baseUnitSize * 10;
 
-        painter.drawLine(i, 0, i, modelRow * baseUnitSize);//绘制列
+    for(int i = referenceLineSize; i < modelColumn * referenceLineSize; i += referenceLineSize)
+    {
+        if((i / referenceLineSize + modelOffsetX) % 10 != 0)
+            painter.setPen(VIEW::LUMINOSITY_1_17.rgb());
+        else if((i / referenceLineSize + modelOffsetX) % 100 != 0)
+            painter.setPen(VIEW::LUMINOSITY_1_34.rgb());
+        else
+            painter.setPen(VIEW::LUMINOSITY_2_68.rgb());
+
+        painter.drawLine(i, 0, i, modelRow * referenceLineSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
     }
 
-    for(int j = baseUnitSize; j < modelRow * baseUnitSize; j += baseUnitSize)
+    for(int j = referenceLineSize; j < modelRow * referenceLineSize; j += referenceLineSize)
     {
-        if(j / baseUnitSize % 10 != 0)
-            painter.setPen(QColor(17, 17, 17));
+        if((j / referenceLineSize + modelOffsetX) % 10 != 0)
+            painter.setPen(VIEW::LUMINOSITY_1_17.rgb());
+        else if((j / referenceLineSize + modelOffsetX) % 100 != 0)
+            painter.setPen(VIEW::LUMINOSITY_1_34.rgb());
         else
-            painter.setPen(QColor(34, 34, 34));
+            painter.setPen(VIEW::LUMINOSITY_1_51.rgb());
 
-        painter.drawLine(0, j, modelColumn * baseUnitSize, j);//绘制行
-        //qDebug() << i << j - baseUnitSize << modelColumn * baseUnitSize;
+        painter.drawLine(0, j, modelColumn * referenceLineSize - 1, j);//绘制行
+        //qDebug() << i << j - referenceLineSize << modelColumn * referenceLineSize;
     }
 }
