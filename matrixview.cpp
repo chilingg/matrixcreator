@@ -17,24 +17,24 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     setAutoFillBackground(true);
     setPalette(pal);
 
-    baseUnitSize = 10;//默认的一个单元大小
+    baseUnitSize = 2;//默认的一个单元大小
 
     viewOffsetX = 0;
     viewOffsetY = 0;
     modelOffsetX = WORLDSIZE / 2;
     modelOffsetY = WORLDSIZE / 2;
-    modelColumn = 0;
-    modelRow = 0;
+    viewColumn = 0;
+    viewRow = 0;
 }
 
 int MatrixView::getModelColumn() const
 {
-    return modelColumn;
+    return viewColumn;
 }
 
 int MatrixView::getModelRow() const
 {
-    return modelRow;
+    return viewRow;
 }
 
 int MatrixView::getBaseUnitSize() const
@@ -45,9 +45,9 @@ int MatrixView::getBaseUnitSize() const
 bool MatrixView::pointViewToModel(int &x, int &y)
 {
     //判断点击是否发生在view范围内
-    if (x > 0 && x < modelColumn * baseUnitSize)
+    if (x > 0 && x < viewColumn * baseUnitSize)
     {
-        if (y > 0 && y < modelColumn * baseUnitSize)
+        if (y > 0 && y < viewColumn * baseUnitSize)
         {
             x = x / baseUnitSize + modelOffsetX;
             y = y / baseUnitSize + modelOffsetY;
@@ -77,34 +77,34 @@ void MatrixView::paintEvent(QPaintEvent *)
     QPainter painter(this);
 
     //计算视图中的模型行列
-    modelColumn = 0;
-    modelRow = 0;
-    while (modelColumn * baseUnitSize < width() - baseUnitSize)
-        ++modelColumn;
-    while (modelRow * baseUnitSize < height() - baseUnitSize)
-        ++modelRow;
+    viewColumn = 0;
+    viewRow = 0;
+    while (viewColumn * baseUnitSize < width() - baseUnitSize)
+        ++viewColumn;
+    while (viewRow * baseUnitSize < height() - baseUnitSize)
+        ++viewRow;
 
-    if(modelOffsetX + modelColumn > WORLDSIZE)
-        modelOffsetX = WORLDSIZE - modelColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
+    if(modelOffsetX + viewColumn > WORLDSIZE)
+        modelOffsetX = WORLDSIZE - viewColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
     if(modelOffsetX < 0)
     {
         modelOffsetX = 0;
-        modelColumn = WORLDSIZE;
+        viewColumn = WORLDSIZE;
     }//检查模型列是否小于视图列，若是则更改视图大小
 
-    if(modelOffsetY + modelRow > WORLDSIZE)
-        modelOffsetY = WORLDSIZE - modelRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
+    if(modelOffsetY + viewRow > WORLDSIZE)
+        modelOffsetY = WORLDSIZE - viewRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
     if(modelOffsetY < 0)
     {
         modelOffsetY = 0;
-        modelRow = WORLDSIZE;
+        viewRow = WORLDSIZE;
     }//检查模型行是否小于视图行，若是则更改视图大小
 
-    QImage image(modelColumn * baseUnitSize, modelRow * baseUnitSize, QImage::Format_RGB32);
+    QImage image(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
 
-    for(int i = 0; i < modelColumn; ++i)
+    for(int i = 0; i < viewColumn; ++i)
     {
-        for(int j = 0; j < modelRow; ++j)
+        for(int j = 0; j < viewRow; ++j)
         {
             QRgb color;
 
@@ -123,8 +123,8 @@ void MatrixView::paintEvent(QPaintEvent *)
     }
 
     //添加坐标偏移，使模型居中于视图
-    viewOffsetX = (width() - modelColumn * baseUnitSize) / 2;
-    viewOffsetY = (height() - modelRow * baseUnitSize) / 2;
+    viewOffsetX = (width() - viewColumn * baseUnitSize) / 2;
+    viewOffsetY = (height() - viewRow * baseUnitSize) / 2;
     painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
     painter.drawImage(0, 0, image);//绘制View
@@ -146,30 +146,42 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 
 void MatrixView::referenceLine(QPainter &painter)
 {
-    int referenceLineSize = baseUnitSize >= 10 ? baseUnitSize : baseUnitSize * 10;
+    //若基础单元小于10象素，则把参考线的相隔单位扩大十倍
+    int baseSize = baseUnitSize;
+    int column = viewColumn;qDebug() << column << "-->This is Column()";
+    int row = viewRow;
 
-    for(int i = referenceLineSize; i < modelColumn * referenceLineSize; i += referenceLineSize)
+    if (baseSize < 10)
     {
-        if((i / referenceLineSize + modelOffsetX) % 10 != 0)
-            painter.setPen(VIEW::LUMINOSITY_1_17.rgb());
-        else if((i / referenceLineSize + modelOffsetX) % 100 != 0)
-            painter.setPen(VIEW::LUMINOSITY_1_34.rgb());
-        else
-            painter.setPen(VIEW::LUMINOSITY_2_68.rgb());
-
-        painter.drawLine(i, 0, i, modelRow * referenceLineSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+        baseSize *= 10;
+        column /= 10;
+        //row *= 10;
     }
 
-    for(int j = referenceLineSize; j < modelRow * referenceLineSize; j += referenceLineSize)
-    {
-        if((j / referenceLineSize + modelOffsetX) % 10 != 0)
-            painter.setPen(VIEW::LUMINOSITY_1_17.rgb());
-        else if((j / referenceLineSize + modelOffsetX) % 100 != 0)
-            painter.setPen(VIEW::LUMINOSITY_1_34.rgb());
-        else
-            painter.setPen(VIEW::LUMINOSITY_1_51.rgb());
+    //绘制一级参考线，相隔一个基础单元
+    painter.setPen(VIEW::LUMINOSITY_1_17.rgb());
+    for(int i = 1; i < column; ++i)
+        painter.drawLine(i * baseSize, 0,
+                         i * baseSize, row * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+    for(int j = 1; j < row; ++j)
+        painter.drawLine(0, j * baseSize,
+                         column * baseUnitSize - 1, j * baseSize);//绘制行
 
-        painter.drawLine(0, j, modelColumn * referenceLineSize - 1, j);//绘制行
-        //qDebug() << i << j - referenceLineSize << modelColumn * referenceLineSize;
-    }
+    //绘制二级参考线，相隔十个基础单元
+    painter.setPen(VIEW::LUMINOSITY_1_34.rgb());
+    for(int i = 10 - (modelOffsetX % 10); i < column; i += 10)
+        painter.drawLine(i * baseSize, 0,
+                         i * baseSize, row * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+    for(int j = 10 - (modelOffsetY % 10); j < row; j += 10)
+        painter.drawLine(0, j * baseSize,
+                         column * baseUnitSize - 1, j * baseSize);//绘制行
+
+    //绘制三级参考线，相隔百个基础单元
+    painter.setPen(VIEW::LUMINOSITY_2_68.rgb());
+    for(int i = 100 - (modelOffsetX % 100); i < column; i += 100)
+        painter.drawLine(i * baseSize, 0,
+                         i * baseSize, row * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+    for(int j = 100 - (modelOffsetY % 100); j < row; j += 100)
+        painter.drawLine(0, j * baseSize,
+                         column * baseUnitSize - 1, j * baseSize);//绘制行
 }

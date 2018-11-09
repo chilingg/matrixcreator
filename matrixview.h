@@ -43,8 +43,34 @@ private:
     int modelOffsetX;
     int modelOffsetY;
 
-    int modelColumn;
-    int modelRow;
+    int viewColumn;
+    int viewRow;
 };
+
+namespace VIEW
+{
+    //定义了一组五分三等的明度
+    const QColor LUMINOSITY_0_0(0, 0, 0);//Black
+
+    const QColor LUMINOSITY_1_17(17, 17, 17);
+    const QColor LUMINOSITY_1_34(34, 34, 34);
+    const QColor LUMINOSITY_1_51(51, 51, 51);
+
+    const QColor LUMINOSITY_2_68(68, 68, 68);
+    const QColor LUMINOSITY_2_85(85, 85, 85);
+    const QColor LUMINOSITY_2_102(102, 102, 102);
+
+    const QColor LUMINOSITY_3_119(119, 119, 119);
+    const QColor LUMINOSITY_3_136(136, 136, 136);
+    const QColor LUMINOSITY_3_153(153, 153, 153);
+
+    const QColor LUMINOSITY_4_170(170, 170, 170);
+    const QColor LUMINOSITY_4_187(187, 187, 187);
+    const QColor LUMINOSITY_4_204(204, 204, 204);
+
+    const QColor LUMINOSITY_5_221(221, 221, 221);
+    const QColor LUMINOSITY_5_238(238, 238, 238);
+    const QColor LUMINOSITY_5_255(255, 255, 255);//white
+}
 
 #endif // MATRIXVIEW_H
