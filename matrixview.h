@@ -16,6 +16,7 @@ public:
     int getModelRow() const;
     int getBaseUnitSize() const;
     bool pointViewToModel(int &x, int &y);//返回view坐标中对应的model坐标
+    void zoomView(bool zoomView);
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -24,6 +25,7 @@ private:
     void drawBaseUnit(int x, int y, QRgb color, QImage &image);//按baseUnitSize绘制基础单元
     void referenceLine(QPainter &painter);//绘制参考线
 
+    MatrixModel *model;
     int baseUnitSize; //基础单位的大小
 
     //基本状态
@@ -33,7 +35,6 @@ private:
     const QRgb dieColor;
     const QRgb liveColer;
 
-    MatrixModel *model;
 
     //绘制的矩阵与客户区坐标偏移量
     int viewOffsetX;
@@ -70,7 +71,9 @@ namespace VIEW
 
     const QColor LUMINOSITY_5_221(221, 221, 221);
     const QColor LUMINOSITY_5_238(238, 238, 238);
-    const QColor LUMINOSITY_5_255(255, 255, 255);//white
+    const QColor LUMINOSITY_5_255(255, 255, 255);//White
+
+    const QColor WARNING(255, 0, 0);//Red
 }
 
 #endif // MATRIXVIEW_H

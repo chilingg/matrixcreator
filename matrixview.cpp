@@ -5,11 +5,11 @@
 
 MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     :QWidget(parent),
+      model(model),
       died(0),
       lived(1),
       dieColor(VIEW::LUMINOSITY_0_0.rgb()),
-      liveColer(VIEW::LUMINOSITY_5_255.rgb()),
-      model(model)
+      liveColer(VIEW::LUMINOSITY_5_255.rgb())
 {
     //Set window backgroundcolor
     QPalette pal = palette();
@@ -17,7 +17,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     setAutoFillBackground(true);
     setPalette(pal);
 
-    baseUnitSize = 2;//默认的一个单元大小
+    baseUnitSize = 50;//默认的一个单元大小
 
     viewOffsetX = 0;
     viewOffsetY = 0;
@@ -25,6 +25,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     modelOffsetY = WORLDSIZE / 2;
     viewColumn = 0;
     viewRow = 0;
+
 }
 
 int MatrixView::getModelColumn() const
@@ -60,6 +61,35 @@ bool MatrixView::pointViewToModel(int &x, int &y)
     qDebug() << x / baseUnitSize << x << "-->pos().x";
     qDebug() << y / baseUnitSize << y << "-->pos().y";
     return false;
+}
+
+void MatrixView::zoomView(bool zoom)
+{
+    if(zoom)
+    {
+        //放大
+        if(baseUnitSize == 1)
+            baseUnitSize = 2;
+        else if(baseUnitSize == 2)
+            baseUnitSize = 10;
+        else if (baseUnitSize > 40)
+            baseUnitSize = 50;
+        else if (baseUnitSize > 1)
+            baseUnitSize += 10;
+        else
+            qDebug() << baseUnitSize << "Zoom(In) value over!";
+    }else
+    {
+        //缩小
+        if(baseUnitSize <= 10)
+            baseUnitSize = 1;
+        else if (baseUnitSize <= 50)
+            baseUnitSize -= 10;
+        else
+            qDebug() << baseUnitSize << "Zoom(Out) value over!";
+    }
+    qDebug() << baseUnitSize << "Test zoom";
+    update();
 }
 
 int MatrixView::getViewOffsetX() const
@@ -146,42 +176,64 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 
 void MatrixView::referenceLine(QPainter &painter)
 {
-    //若基础单元小于10象素，则把参考线的相隔单位扩大十倍
-    int baseSize = baseUnitSize;
-    int column = viewColumn;qDebug() << column << "-->This is Column()";
-    int row = viewRow;
+    //基础单元为一个像素时取消参考线
+    if(baseUnitSize <= 1)
+        return;
 
-    if (baseSize < 10)
+    int level = 0;//参考线明度等级
+    const QColor lineColor[5] = {VIEW::LUMINOSITY_1_17.rgb(),
+                                 VIEW::LUMINOSITY_1_34.rgb(),
+                                 VIEW::LUMINOSITY_2_68.rgb(),
+                                 VIEW::LUMINOSITY_2_85.rgb(),
+                                 VIEW::WARNING.rgb()
+                                };
+
+    if(baseUnitSize >= 10)
     {
-        baseSize *= 10;
-        column /= 10;
-        //row *= 10;
+        //绘制一级参考线，相隔一个基础单元
+        painter.setPen(lineColor[level]);
+        for(int i = 1; i < viewColumn; ++i)
+            painter.drawLine(i * baseUnitSize, 0,
+                             i * baseUnitSize, viewRow * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+        for(int j = 1; j < viewRow; ++j)
+            painter.drawLine(0, j * baseUnitSize,
+                             viewColumn * baseUnitSize - 1, j * baseUnitSize);//绘制行
+        ++level;
     }
 
-    //绘制一级参考线，相隔一个基础单元
-    painter.setPen(VIEW::LUMINOSITY_1_17.rgb());
-    for(int i = 1; i < column; ++i)
-        painter.drawLine(i * baseSize, 0,
-                         i * baseSize, row * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
-    for(int j = 1; j < row; ++j)
-        painter.drawLine(0, j * baseSize,
-                         column * baseUnitSize - 1, j * baseSize);//绘制行
-
     //绘制二级参考线，相隔十个基础单元
-    painter.setPen(VIEW::LUMINOSITY_1_34.rgb());
-    for(int i = 10 - (modelOffsetX % 10); i < column; i += 10)
-        painter.drawLine(i * baseSize, 0,
-                         i * baseSize, row * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
-    for(int j = 10 - (modelOffsetY % 10); j < row; j += 10)
-        painter.drawLine(0, j * baseSize,
-                         column * baseUnitSize - 1, j * baseSize);//绘制行
+    painter.setPen(lineColor[level]);
+    for(int i = 10 - (modelOffsetX % 10); i < viewColumn; i += 10)
+        painter.drawLine(i * baseUnitSize, 0,
+                         i * baseUnitSize, viewRow * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+    for(int j = 10 - (modelOffsetY % 10); j < viewRow; j += 10)
+        painter.drawLine(0, j * baseUnitSize,
+                         viewColumn * baseUnitSize - 1, j * baseUnitSize);//绘制行
+    ++level;
 
     //绘制三级参考线，相隔百个基础单元
-    painter.setPen(VIEW::LUMINOSITY_2_68.rgb());
-    for(int i = 100 - (modelOffsetX % 100); i < column; i += 100)
-        painter.drawLine(i * baseSize, 0,
-                         i * baseSize, row * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
-    for(int j = 100 - (modelOffsetY % 100); j < row; j += 100)
-        painter.drawLine(0, j * baseSize,
-                         column * baseUnitSize - 1, j * baseSize);//绘制行
+    painter.setPen(lineColor[level]);
+    for(int i = 100 - (modelOffsetX % 100); i < viewColumn; i += 100)
+        painter.drawLine(i * baseUnitSize, 0,
+                         i * baseUnitSize, viewRow * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+    for(int j = 100 - (modelOffsetY % 100); j < viewRow; j += 100)
+        painter.drawLine(0, j * baseUnitSize,
+                         viewColumn * baseUnitSize - 1, j * baseUnitSize);//绘制行
+    ++level;
+
+    if(WORLDSIZE > 1000)
+    {
+        //绘制三级参考线，相隔百个基础单元
+        painter.setPen(lineColor[level]);
+        for(int i = 1000 - (modelOffsetX % 1000); i < viewColumn; i += 1000)
+            painter.drawLine(i * baseUnitSize, 0,
+                             i * baseUnitSize, viewRow * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
+        for(int j = 1000 - (modelOffsetY % 1000); j < viewRow; j += 1000)
+            painter.drawLine(0, j * baseUnitSize,
+                             viewColumn * baseUnitSize - 1, j * baseUnitSize);//绘制行
+        ++level;
+    }
+
+    if(level < 0 || level > 4)
+        qDebug() << level << "Line color error.";
 }

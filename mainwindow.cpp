@@ -53,3 +53,11 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_Space)
         start = !start;
 }
+
+void MainWindow::wheelEvent(QWheelEvent *event)
+{
+    if(event->delta() > 0)
+        view->zoomView(true);
+    else
+        view->zoomView(false);
+}

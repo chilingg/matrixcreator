@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 #include <QTimerEvent>
 #include <QKeyEvent>
+#include <QWheelEvent>
 
 #include "matrixmodel.h"
 #include "matrixview.h"
@@ -21,6 +22,7 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void timerEvent(QTimerEvent *);
     void keyPressEvent(QKeyEvent *event);
+    void wheelEvent(QWheelEvent *event);
 
 private:
     MatrixModel *model;
