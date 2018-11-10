@@ -9,7 +9,8 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       died(0),
       lived(1),
       dieColor(VIEW::LUMINOSITY_0_0.rgb()),
-      liveColer(VIEW::LUMINOSITY_5_255.rgb())
+      liveColer(VIEW::LUMINOSITY_5_255.rgb()),
+      zoomList{1,2,4,8,16,20,30,40,50}
 {
     //Set window backgroundcolor
     QPalette pal = palette();
@@ -17,7 +18,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     setAutoFillBackground(true);
     setPalette(pal);
 
-    baseUnitSize = 50;//默认的一个单元大小
+    baseUnitSize = zoomList[3];//默认的一个单元大小
 
     viewOffsetX = 0;
     viewOffsetY = 0;
@@ -28,23 +29,11 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
 }
 
-int MatrixView::getModelColumn() const
+bool MatrixView::toModelPoint(int &x, int &y)
 {
-    return viewColumn;
-}
+    x -= viewOffsetX;
+    y -= viewOffsetY;
 
-int MatrixView::getModelRow() const
-{
-    return viewRow;
-}
-
-int MatrixView::getBaseUnitSize() const
-{
-    return baseUnitSize;
-}
-
-bool MatrixView::pointViewToModel(int &x, int &y)
-{
     //判断点击是否发生在view范围内
     if (x > 0 && x < viewColumn * baseUnitSize)
     {
@@ -63,43 +52,39 @@ bool MatrixView::pointViewToModel(int &x, int &y)
     return false;
 }
 
-void MatrixView::zoomView(bool zoom)
+void MatrixView::zoomView(int x, int y, bool zoom)
 {
-    if(zoom)
+    //修正可能存在的错误
+    if(baseUnitSize < zoomList[0] || baseUnitSize > zoomList[8])
     {
-        //放大
-        if(baseUnitSize == 1)
-            baseUnitSize = 2;
-        else if(baseUnitSize == 2)
-            baseUnitSize = 10;
-        else if (baseUnitSize > 40)
-            baseUnitSize = 50;
-        else if (baseUnitSize > 1)
-            baseUnitSize += 10;
-        else
-            qDebug() << baseUnitSize << "Zoom(In) value over!";
-    }else
-    {
-        //缩小
-        if(baseUnitSize <= 10)
-            baseUnitSize = 1;
-        else if (baseUnitSize <= 50)
-            baseUnitSize -= 10;
-        else
-            qDebug() << baseUnitSize << "Zoom(Out) value over!";
+        qDebug() << baseUnitSize << "Zoom value over!";
+        baseUnitSize < zoomList[0] ? baseUnitSize = zoomList[0] : baseUnitSize = zoomList[8];
     }
-    qDebug() << baseUnitSize << "Test zoom";
+
+    //计算当前缩放级别。考虑以后可能会有的自定义基础单元大小，使用while循环计算
+    int level = 0;
+    while (level < 9)
+    {
+        if(zoomList[level] >= baseUnitSize)
+        {
+            //--level;
+            break;
+        }
+        ++level;
+    }
+
+    if(zoom && level != 8)
+        baseUnitSize = zoomList[level+1];
+    else if(zoom && level == 8)
+        baseUnitSize = zoomList[level];
+
+    if(!zoom && level != 0)
+        baseUnitSize = zoomList[level-1];
+    else if(!zoom && level == 0)
+        baseUnitSize = zoomList[level];
+
+    qDebug() << baseUnitSize << level << "Test zoom";
     update();
-}
-
-int MatrixView::getViewOffsetX() const
-{
-    return viewOffsetX;
-}
-
-int MatrixView::getViewOffsetY() const
-{
-    return viewOffsetY;
 }
 
 void MatrixView::paintEvent(QPaintEvent *)
@@ -188,7 +173,7 @@ void MatrixView::referenceLine(QPainter &painter)
                                  VIEW::WARNING.rgb()
                                 };
 
-    if(baseUnitSize >= 10)
+    if(baseUnitSize >= 8)
     {
         //绘制一级参考线，相隔一个基础单元
         painter.setPen(lineColor[level]);

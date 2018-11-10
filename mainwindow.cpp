@@ -24,12 +24,11 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && start == false)
     {
-        //把点击的坐标转换到view坐标系
-        int x = event->pos().x() - view->getViewOffsetX();
-        int y = event->pos().y() - view->getViewOffsetY();
+        int x = event->pos().x();
+        int y = event->pos().y();
 
-        //view坐标转换到model坐标, 若不在view范围内则退出函数
-        if(!(view->pointViewToModel(x, y)))
+        //点击坐标转换到model坐标, 若不在view范围内则退出函数
+        if(!(view->toModelPoint(x, y)))
             return;
 
         //点击的单元转换为相反状态
@@ -56,8 +55,17 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::wheelEvent(QWheelEvent *event)
 {
+    int x = event->pos().x();
+    int y = event->pos().y();
+    //滚动时指针的坐标转换到model坐标, 若不在view范围内则调用父类同名函数处理
+    if(!(view->toModelPoint(x, y)))
+    {
+        QMainWindow::wheelEvent(event);
+        return;
+    }
+
     if(event->delta() > 0)
-        view->zoomView(true);
+        view->zoomView(x, y, true);
     else
-        view->zoomView(false);
+        view->zoomView(x, y, false);
 }

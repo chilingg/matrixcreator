@@ -10,13 +10,8 @@ class MatrixView : public QWidget
 
 public:
     MatrixView(MatrixModel *model, QWidget *parent = 0);
-    int getViewOffsetX() const;
-    int getViewOffsetY() const;
-    int getModelColumn() const;
-    int getModelRow() const;
-    int getBaseUnitSize() const;
-    bool pointViewToModel(int &x, int &y);//返回view坐标中对应的model坐标
-    void zoomView(bool zoomView);
+    bool toModelPoint(int &clickedX, int &y);//返回view坐标中对应的model坐标
+    void zoomView(int x, int y, bool zoomView);
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -46,6 +41,8 @@ private:
 
     int viewColumn;
     int viewRow;
+
+    const int zoomList[9];
 };
 
 namespace VIEW
