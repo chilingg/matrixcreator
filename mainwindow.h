@@ -20,6 +20,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
     void timerEvent(QTimerEvent *);
     void keyPressEvent(QKeyEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -28,6 +29,7 @@ private:
     MatrixModel *model;
     MatrixView *view;
     bool start;
+    QPoint movePos;
 };
 
 #endif // MAINWINDOW_H

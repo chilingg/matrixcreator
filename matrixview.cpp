@@ -50,10 +50,29 @@ bool MatrixView::isInView(int clickedX, int clickedY)
     return false;
 }
 
-bool MatrixView::toModelPoints(int &clickedX, int &clickedY)
+bool MatrixView::isInView(QPoint pos)
 {
-    if(!(isInView(clickedX, clickedY)))
-        return false;
+    pos -= QPoint(viewOffsetX, viewOffsetY);
+
+    //判断点击是否发生在view范围内
+    if (pos.x() > 0 && pos.x() < viewColumn * baseUnitSize)
+    {
+        if (pos.y() > 0 && pos.y() < viewRow * baseUnitSize)
+        {
+            return true;
+        }
+    }
+
+    qDebug() << "Point over!";
+    qDebug() << viewColumn << viewRow << baseUnitSize << "C&R&B";
+    qDebug() << pos.x() / baseUnitSize << pos.x() << "-->pos().x";
+    qDebug() << pos.y() / baseUnitSize << pos.y() << "-->pos().y";
+    return false;
+}
+
+QPoint MatrixView::getModelPoint(int clickedX, int clickedY)
+{
+    isInView(clickedX, clickedY);
 
     clickedX -= viewOffsetX;
     clickedY -= viewOffsetY;
@@ -62,15 +81,47 @@ bool MatrixView::toModelPoints(int &clickedX, int &clickedY)
     clickedX = clickedX / baseUnitSize + modelOffsetX;
     clickedY = clickedY / baseUnitSize + modelOffsetY;
 
-    return true;
+    return QPoint(clickedX, clickedY);
+}
+
+QPoint MatrixView::getUnitPoint(int modelX, int modelY) const
+{
+    int x = modelX * baseUnitSize + baseUnitSize / 2;
+    int y = modelY * baseUnitSize + baseUnitSize / 2;
+    
+    return QPoint(x, y);
+}
+
+QPoint MatrixView::getUnitPoint(QPoint modelPoint) const
+{
+    int x = modelPoint.x() - modelOffsetX;
+    int y = modelPoint.y() - modelOffsetY;
+
+    if(x < 0 || x > viewColumn)
+        qDebug() << "Unit not in view!" << x << y;
+    if(y < 0 || y > viewRow)
+        qDebug() << "Unit not in view!" << x << y;
+
+    x = x * baseUnitSize + baseUnitSize / 2;
+    y = y * baseUnitSize + baseUnitSize / 2;
+
+    return QPoint(x, y);
+}
+
+QPoint MatrixView::getviewOffsetPoint() const
+{
+    return QPoint(viewOffsetX, viewOffsetY);
+}
+
+int MatrixView::getBaseUnitSize() const
+{
+    return baseUnitSize;
 }
 
 void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
 {
     //缩放之前鼠标处的模型坐标
-    int beforeX = clickedX;
-    int beforeY = clickedY;
-    toModelPoints(beforeX, beforeY);
+    QPoint beforePoint = getModelPoint(clickedX, clickedY);
 
     //修正可能存在的错误
     if(baseUnitSize < zoomList[0] || baseUnitSize > zoomList[8])
@@ -104,24 +155,17 @@ void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
     updateViewData();//因为update()不会立即重绘视图，所以需在此更新数据，以便在重绘函数中的updateViewData()调用前能得到正确的数据
 
     //缩放后鼠标处的模型坐标
-    int afterX = clickedX;
-    int afterY = clickedY;
-    toModelPoints(afterX, afterY);
+    QPoint afterPoint = getModelPoint(clickedX, clickedY);
 
     //修改模型偏差值，使鼠标位置下的单元仍是缩放之前的单元
-    modelOffsetX -= afterX - beforeX;
-    modelOffsetY -= afterY - beforeY;
+    modelOffsetX -= afterPoint.x() - beforePoint.x();
+    modelOffsetY -= afterPoint.y() - beforePoint.y();
 
     //qDebug() << QPoint(clickedX, clickedX) << "Test clicked point";
     //qDebug() << QPoint(afterX, afterY) << QPoint(beforeX, beforeY) << "Test zoom point";
     //qDebug() << baseUnitSize << level << "Test zoom";
 
     update();//在事件循环后重绘视图
-}
-
-QPoint MatrixView::getViewOffset() const
-{
-    return QPoint(viewOffsetX,viewOffsetY);
 }
 
 void MatrixView::updateViewData()
