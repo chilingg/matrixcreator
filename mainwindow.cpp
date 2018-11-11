@@ -28,12 +28,14 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
         int y = event->pos().y();
 
         //点击坐标转换到model坐标, 若不在view范围内则退出函数
-        if(!(view->toModelPoint(x, y)))
+        if(!(view->toModelPoints(x, y)))
             return;
 
         //点击的单元转换为相反状态
         model->changeModelValue(x, y);
         view->update();
+
+        //qDebug() << QPoint(x,y) << "Clicked x & y";
     }
 }
 
@@ -55,17 +57,29 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::wheelEvent(QWheelEvent *event)
 {
-    int x = event->pos().x();
-    int y = event->pos().y();
+    int clickedX = event->pos().x();
+    int clickedY = event->pos().y();
+
     //滚动时指针的坐标转换到model坐标, 若不在view范围内则调用父类同名函数处理
-    if(!(view->toModelPoint(x, y)))
+    if(!(view->isInView(clickedX, clickedY)))
     {
         QMainWindow::wheelEvent(event);
         return;
     }
 
+    QPoint beforeViewOffset = view->getViewOffset();//缩放之前的视图偏差
+    qDebug() << beforeViewOffset << "Before";
+
     if(event->delta() > 0)
-        view->zoomView(x, y, true);
+        view->zoomView(clickedX, clickedY, true);//缩小
     else
-        view->zoomView(x, y, false);
+        view->zoomView(clickedX, clickedY, false);//放大
+
+    QPoint afterViewOffset = view->getViewOffset();//缩放之后的视图偏差
+    qDebug() << afterViewOffset << "After";
+
+    qDebug() << cursor().pos() << "After";
+    cursor().setPos(event->globalPos() + beforeViewOffset - afterViewOffset);
+    qDebug() << cursor().pos() << "After";
+    qDebug() << event->globalPos() << beforeViewOffset << afterViewOffset << "cursor";
 }

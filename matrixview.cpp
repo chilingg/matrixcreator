@@ -29,31 +29,49 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
 }
 
-bool MatrixView::toModelPoint(int &x, int &y)
+bool MatrixView::isInView(int clickedX, int clickedY)
 {
-    x -= viewOffsetX;
-    y -= viewOffsetY;
+    clickedX -= viewOffsetX;
+    clickedY -= viewOffsetY;
 
     //判断点击是否发生在view范围内
-    if (x > 0 && x < viewColumn * baseUnitSize)
+    if (clickedX > 0 && clickedX < viewColumn * baseUnitSize)
     {
-        if (y > 0 && y < viewColumn * baseUnitSize)
+        if (clickedY > 0 && clickedY < viewRow * baseUnitSize)
         {
-            x = x / baseUnitSize + modelOffsetX;
-            y = y / baseUnitSize + modelOffsetY;
-
             return true;
         }
     }
 
     qDebug() << "Point over!";
-    qDebug() << x / baseUnitSize << x << "-->pos().x";
-    qDebug() << y / baseUnitSize << y << "-->pos().y";
+    qDebug() << viewColumn << viewRow << baseUnitSize << "C&R&B";
+    qDebug() << clickedX / baseUnitSize << clickedX << "-->pos().x";
+    qDebug() << clickedY / baseUnitSize << clickedY << "-->pos().y";
     return false;
 }
 
-void MatrixView::zoomView(int x, int y, bool zoom)
+bool MatrixView::toModelPoints(int &clickedX, int &clickedY)
 {
+    if(!(isInView(clickedX, clickedY)))
+        return false;
+
+    clickedX -= viewOffsetX;
+    clickedY -= viewOffsetY;
+
+    //qDebug() << clickedX << clickedY << "Clicked X and Y";
+    clickedX = clickedX / baseUnitSize + modelOffsetX;
+    clickedY = clickedY / baseUnitSize + modelOffsetY;
+
+    return true;
+}
+
+void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
+{
+    //缩放之前鼠标处的模型坐标
+    int beforeX = clickedX;
+    int beforeY = clickedY;
+    toModelPoints(beforeX, beforeY);
+
     //修正可能存在的错误
     if(baseUnitSize < zoomList[0] || baseUnitSize > zoomList[8])
     {
@@ -83,14 +101,31 @@ void MatrixView::zoomView(int x, int y, bool zoom)
     else if(!zoom && level == 0)
         baseUnitSize = zoomList[level];
 
-    qDebug() << baseUnitSize << level << "Test zoom";
-    update();
+    updateViewData();//因为update()不会立即重绘视图，所以需在此更新数据，以便在重绘函数中的updateViewData()调用前能得到正确的数据
+
+    //缩放后鼠标处的模型坐标
+    int afterX = clickedX;
+    int afterY = clickedY;
+    toModelPoints(afterX, afterY);
+
+    //修改模型偏差值，使鼠标位置下的单元仍是缩放之前的单元
+    modelOffsetX -= afterX - beforeX;
+    modelOffsetY -= afterY - beforeY;
+
+    //qDebug() << QPoint(clickedX, clickedX) << "Test clicked point";
+    //qDebug() << QPoint(afterX, afterY) << QPoint(beforeX, beforeY) << "Test zoom point";
+    //qDebug() << baseUnitSize << level << "Test zoom";
+
+    update();//在事件循环后重绘视图
 }
 
-void MatrixView::paintEvent(QPaintEvent *)
+QPoint MatrixView::getViewOffset() const
 {
-    QPainter painter(this);
+    return QPoint(viewOffsetX,viewOffsetY);
+}
 
+void MatrixView::updateViewData()
+{
     //计算视图中的模型行列
     viewColumn = 0;
     viewRow = 0;
@@ -115,6 +150,19 @@ void MatrixView::paintEvent(QPaintEvent *)
         viewRow = WORLDSIZE;
     }//检查模型行是否小于视图行，若是则更改视图大小
 
+    //计算视图偏移量
+    viewOffsetX = (width() - viewColumn * baseUnitSize) / 2;
+    viewOffsetY = (height() - viewRow * baseUnitSize) / 2;
+}
+
+void MatrixView::paintEvent(QPaintEvent *)
+{
+    QPainter painter(this);
+    updateViewData();
+
+    //添加坐标偏移，使模型居中于视图
+    painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
+
     QImage image(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
 
     for(int i = 0; i < viewColumn; ++i)
@@ -136,11 +184,6 @@ void MatrixView::paintEvent(QPaintEvent *)
             drawBaseUnit(i * baseUnitSize, j * baseUnitSize, color, image);
         }
     }
-
-    //添加坐标偏移，使模型居中于视图
-    viewOffsetX = (width() - viewColumn * baseUnitSize) / 2;
-    viewOffsetY = (height() - viewRow * baseUnitSize) / 2;
-    painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
     painter.drawImage(0, 0, image);//绘制View
     referenceLine(painter); //绘制参考线

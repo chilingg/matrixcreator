@@ -19,7 +19,10 @@ MatrixModel::MatrixModel():
 int MatrixModel::getModelValue(int x, int y)
 {
     if(x > WORLDSIZE || y > WORLDSIZE)
-        qDebug() << "Over range!" << x << y;
+    {
+        qDebug() << "Over range!(get)" << x << y;
+        return 0;
+    }
 
     return (currentModel[x][y]);
 
@@ -81,7 +84,7 @@ void MatrixModel::updateModel()
 void MatrixModel::changeModelValue(int x, int y)
 {
     if(x > WORLDSIZE || y > WORLDSIZE)
-        qDebug() << "Over range!" << x << y;
+        qDebug() << "Over range!(change)" << x << y;
 
     currentModel[x][y] = !currentModel[x][y];
 }

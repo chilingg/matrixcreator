@@ -10,8 +10,11 @@ class MatrixView : public QWidget
 
 public:
     MatrixView(MatrixModel *model, QWidget *parent = 0);
-    bool toModelPoint(int &clickedX, int &y);//返回view坐标中对应的model坐标
-    void zoomView(int x, int y, bool zoomView);
+    bool isInView(int clickedX, int clickedY);//返回view坐标中对应的model坐标
+    bool toModelPoints(int &clickedX, int &clickedY);
+    void zoomView(int clickedX, int clickedY, bool zoomView);//true缩小，false放大
+    QPoint getViewOffset() const;
+    void updateViewData();
 
 protected:
     void paintEvent(QPaintEvent *);
