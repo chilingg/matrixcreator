@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QTime> //测算时间
 
 #include "mainwindow.h"
 
@@ -50,6 +51,31 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
             return;
 
         movePos = event->pos();//点击中键记录当前坐标
+
+        //测算时间
+        {
+            qDebug() << "------";
+
+            QTime time;
+            time.start();
+            int zero = time.elapsed();
+
+            view->repaint();
+            qDebug() << time.elapsed() - zero << "V";
+            zero = time.elapsed();
+
+            model->updateModel();
+            qDebug() << time.elapsed() - zero << "M";
+            zero = time.elapsed();
+
+            view->repaint();
+            qDebug() << time.elapsed() - zero << "V";
+            zero = time.elapsed();
+
+            model->updateModel();
+            qDebug() << time.elapsed() - zero << "M";
+            zero = time.elapsed();
+        }
     }
 }
 

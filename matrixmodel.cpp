@@ -3,19 +3,28 @@
 #include "matrixmodel.h"
 
 MatrixModel::MatrixModel():
-    currentModel(model1),
-    tempModel(model2)
+    currentModel(new int[WORLDSIZE][WORLDSIZE]),
+    tempModel(new int[WORLDSIZE][WORLDSIZE])
 {
-    qsrand(32);
+    qsrand(32);//随机测试
     for(int i = 0; i < WORLDSIZE; ++i)
     {
         for(int j = 0; j < WORLDSIZE; ++j)
         {
-            //currentModel[i][j] = qrand() % 16 ? 0 : 1;
-            currentModel[i][j] = 0;
+            currentModel[i][j] = qrand() % 16 ? 0 : 1;
+            //currentModel[i][j] = 0;
             tempModel[i][j] = 0;
         }
     }//初始化数组为0
+}
+
+MatrixModel::~MatrixModel()
+{
+    delete []currentModel;
+    delete []tempModel;
+
+    currentModel = 0;
+    tempModel = 0;
 }
 
 int MatrixModel::getModelValue(int x, int y)
@@ -32,7 +41,8 @@ int MatrixModel::getModelValue(int x, int y)
 
 void MatrixModel::updateModel()
 {
-    //更新模型，奇变偶 偶变奇 <==Test
+    //qDebug() << "M";
+
     for(int i = 0; i < WORLDSIZE; ++i)
     {
         for(int j = 0; j < WORLDSIZE; ++j)

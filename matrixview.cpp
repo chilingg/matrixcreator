@@ -32,7 +32,6 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
     viewColumn = 0;
     viewRow = 0;
-
 }
 
 bool MatrixView::isInView(int clickedX, int clickedY)
@@ -223,6 +222,8 @@ void MatrixView::updateViewData()
 
 void MatrixView::paintEvent(QPaintEvent *)
 {
+    //qDebug() << "V";
+
     QPainter painter(this);
     updateViewData();
 
