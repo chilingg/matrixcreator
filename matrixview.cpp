@@ -22,8 +22,14 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
     viewOffsetX = 0;
     viewOffsetY = 0;
+
     modelOffsetX = WORLDSIZE / 2;
     modelOffsetY = WORLDSIZE / 2;
+    //如果可以，设置初始视图中点为100倍数号的单元。（PS:此时父窗口Size未设置）
+    modelOffsetX -= ((WORLDSIZE / 2) + (INIT_VIEW_WIDTH / baseUnitSize / 2)) % 100;
+    modelOffsetY -= ((WORLDSIZE / 2) + (INIT_VIEW_HEIGHT / baseUnitSize / 2)) % 100;
+    //qDebug() << WORLDSIZE / 2 << INIT_VIEW_WIDTH << "Test initial view.";
+
     viewColumn = 0;
     viewRow = 0;
 
@@ -116,6 +122,22 @@ QPoint MatrixView::getviewOffsetPoint() const
 int MatrixView::getBaseUnitSize() const
 {
     return baseUnitSize;
+}
+
+void MatrixView::moveView(int horizontal, int vertical)
+{
+    if(horizontal)
+    {
+        //qDebug() << "← →" << horizontal;
+        modelOffsetX += horizontal;
+    }
+    if(vertical)
+    {
+        //qDebug() << "↑ ↓" << vertical;
+        modelOffsetY += vertical;
+    }
+
+    updateViewData();
 }
 
 void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)

@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
       view(new MatrixView(model, this))
 {
     setWindowTitle(tr("MatrixCreator"));
-    resize(840, 720);
+    resize(INIT_VIEW_WIDTH, INIT_VIEW_HEIGHT);
     setCentralWidget(view);
 
     startTimer(1000/10);
@@ -49,7 +49,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
         if(!(view->isInView(event->pos())))
             return;
 
-        movePos = event->pos();
+        movePos = event->pos();//点击中键记录当前坐标
     }
 }
 
@@ -58,19 +58,24 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
     if(event->buttons() == Qt::MiddleButton)
     {
         QPoint point = event->pos();
-        if(point.x() - movePos.x() == view->getBaseUnitSize())//Lfet
+
+        //移动的坐标与记录的坐标相差一个基础单元以上时触发视图移动
+        if(point.x() - movePos.x() >= view->getBaseUnitSize() ||
+                movePos.x() - point.x() >= view->getBaseUnitSize())//Horizontal
         {
-            view->moveView(1, 0, 0, 0);
+            view->moveView((movePos.x() - point.x()) / view->getBaseUnitSize(), 0);
             movePos.setX(point.x());
         }
-        if(movePos.x() - point.x() == view->getBaseUnitSize())//Right
-            view->moveView(0, 0, 0, 1);
-        if(point.y() - movePos.y() == view->getBaseUnitSize())//Lfet
-            view->moveView(0, 1, 0, 0);
-        if(movePos.y() - point.y() == view->getBaseUnitSize())//Right
-            view->moveView(0, 0, 1, 1);
+        if(point.y() - movePos.y() >= view->getBaseUnitSize() ||
+                movePos.y() - point.y() >= view->getBaseUnitSize())//Vertical
+        {
+            view->moveView(0, (movePos.y() - point.y()) / view->getBaseUnitSize());
+            movePos.setY(point.y());
+        }
 
-        qDebug() << point << "Mouse move test";
+        view->update();
+
+        //qDebug() << point - movePos << view->getBaseUnitSize() << "Mouse move test";
     }
 }
 

@@ -6,10 +6,12 @@ MatrixModel::MatrixModel():
     currentModel(model1),
     tempModel(model2)
 {
+    qsrand(32);
     for(int i = 0; i < WORLDSIZE; ++i)
     {
         for(int j = 0; j < WORLDSIZE; ++j)
         {
+            //currentModel[i][j] = qrand() % 16 ? 0 : 1;
             currentModel[i][j] = 0;
             tempModel[i][j] = 0;
         }

@@ -17,7 +17,7 @@ public:
     QPoint getUnitPoint(QPoint modelPoint) const;
     QPoint getviewOffsetPoint() const;
     int getBaseUnitSize() const;
-    void moveView(int left, int up, int down, int right);
+    void moveView(int horizontal, int vertical);
     void zoomView(int clickedX, int clickedY, bool zoomView);//true缩小，false放大
     void updateViewData();
 
