@@ -9,7 +9,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       died(0),
       lived(1),
       dieColor(VIEW::LUMINOSITY_0_0.rgb()),
-      liveColer(VIEW::LUMINOSITY_5_255.rgb()),
+      liveColer(VIEW::LUMINOSITY_4_187.rgb()),
       zoomList{1,2,4,8,16,20,30,40,50}
 {
     //Set window backgroundcolor
@@ -172,12 +172,17 @@ QRect MatrixView::getSelectedModelRect() const
 
     modelRect.setTopLeft(QPoint(selectedUnitRect.topLeft().x() / baseUnitSize + modelOffsetX,
                                 selectedUnitRect.topLeft().y() / baseUnitSize + modelOffsetY));
-    modelRect.setBottomRight(QPoint(selectedUnitRect.bottomRight().x() / baseUnitSize - 1 + modelOffsetX,
-                                    selectedUnitRect.bottomRight().y() / baseUnitSize - 1 + modelOffsetY));
+    modelRect.setBottomRight(QPoint(selectedUnitRect.bottomRight().x() / baseUnitSize + modelOffsetX,
+                                    selectedUnitRect.bottomRight().y() / baseUnitSize + modelOffsetY));
 
     //qDebug() << modelRect.isEmpty() << modelRect.isNull() << modelRect.isValid() << "Test selected model";
 
     return modelRect;
+}
+
+QRect MatrixView::getSelectedUnitRect() const
+{
+    return selectedUnitRect;
 }
 
 int MatrixView::getBaseUnitSize() const

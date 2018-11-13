@@ -22,6 +22,7 @@ public:
     QRect getUnitRect(QPoint modelPoint) const;
 
     QRect getSelectedModelRect() const;
+    QRect getSelectedUnitRect() const;
     QPoint getViewOffsetPoint() const;
     int getBaseUnitSize() const;
 

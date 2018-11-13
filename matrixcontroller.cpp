@@ -20,7 +20,7 @@ MatriController::MatriController(QWidget *parent)
 MatriController::~MatriController()
 {
     delete model;
-    model = 0;
+    model = nullptr;
 }
 
 void MatriController::mousePressEvent(QMouseEvent *event)
@@ -45,12 +45,25 @@ void MatriController::mousePressEvent(QMouseEvent *event)
             return;
         }
 
-        QPoint clickedPos = view->getUnitPoint(view->getModelPoint(event->pos()));
-        //if(clickedPos)
+
+        if(selectRect.isValid())
+        {
+            //单击发生在SelectBox内，则取消选框
+            QPoint clickedPos = view->getUnitPoint(view->getModelPoint(event->pos()));
+            QRect selected = view->getSelectedUnitRect();
+            //qDebug() << selected.width() << clickedPos << "Test selectRect";
+            if(selected.contains(clickedPos) &&
+                    selected.width() == view->getBaseUnitSize() &&
+                    selected.height() == view->getBaseUnitSize())
+            {
+                selectRect = QRect();
+                view->selectedUnits(selectRect);
+                view->update();
+                return;
+            }
+        }
 
         selectRect = view->getUnitRect(view->getModelPoint(event->pos()));//单击选择
-        qDebug() << selectRect.topLeft() << selectRect.bottomRight() << "Test selectRect";
-        qDebug() << selectRect.contains(clickedPos) << "Test selectRect";
         view->selectedUnits(selectRect);
         view->update();
     }
@@ -94,6 +107,8 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
     {
         if(!(view->isInView(event->pos())))
             return;
+        if(selectRect.isEmpty())
+            return;
 
         QRect beforePos = selectRect;
         QRect afterPos = view->getUnitRect(view->getModelPoint(event->pos()));
@@ -122,12 +137,30 @@ void MatriController::mouseDoubleClickEvent(QMouseEvent *event)
 {
     if (event->buttons() == Qt::LeftButton && start == false)
     {
-        //如果有，则处理框选
+/*
+        //如果有且点击发生在其中，则处理框选
         if(selectRect.isValid())
         {
-            view->getSelectedModelRect();
-            return;
+            QPoint clickedPos = view->getUnitPoint(view->getModelPoint(event->pos()));
+            if(view->getSelectedUnitRect().contains(clickedPos))
+            {
+                QRect models = view->getSelectedModelRect();
+                qDebug() << models << "Test Selected models.";
+
+                for(int i = models.left(); i <= models.right(); ++i)
+                {
+                    for(int j = models.top(); j <= models.bottom(); ++j)
+                    {
+                        //qDebug() << i << j;
+                        model->changeModelValue(i, j);
+                    }
+                }
+                view->update();
+
+                return;
+            }
         }
+*/
 
         int x = event->pos().x();
         int y = event->pos().y();

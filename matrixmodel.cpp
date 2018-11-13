@@ -1,18 +1,17 @@
 #include <QDebug>
-
 #include "matrixmodel.h"
 
 MatrixModel::MatrixModel():
     currentModel(new int[WORLDSIZE][WORLDSIZE]),
     tempModel(new int[WORLDSIZE][WORLDSIZE])
 {
-    qsrand(32);//随机测试
+    //qsrand(32);//随机测试
     for(int i = 0; i < WORLDSIZE; ++i)
     {
         for(int j = 0; j < WORLDSIZE; ++j)
         {
-            currentModel[i][j] = qrand() % 16 ? 0 : 1;
-            //currentModel[i][j] = 0;
+            //currentModel[i][j] = qrand() % 16 ? 0 : 1;
+            currentModel[i][j] = 0;
             tempModel[i][j] = 0;
         }
     }//初始化数组为0
