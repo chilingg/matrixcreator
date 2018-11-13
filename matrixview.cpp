@@ -32,6 +32,8 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
     viewColumn = 0;
     viewRow = 0;
+
+    selectedUnitRect = QRect();
 }
 
 bool MatrixView::isInView(int clickedX, int clickedY)
@@ -89,7 +91,21 @@ QPoint MatrixView::getModelPoint(int clickedX, int clickedY)
     return QPoint(clickedX, clickedY);
 }
 
-QPoint MatrixView::getUnitPoint(int modelX, int modelY) const
+QPoint MatrixView::getModelPoint(QPoint clickedPos)
+{
+    isInView(clickedPos);
+
+    int clickedX = clickedPos.x() - viewOffsetX;
+    int clickedY = clickedPos.y() - viewOffsetY;
+
+    //qDebug() << clickedX << clickedY << "Clicked X and Y";
+    clickedX = clickedX / baseUnitSize + modelOffsetX;
+    clickedY = clickedY / baseUnitSize + modelOffsetY;
+
+    return QPoint(clickedX, clickedY);
+}
+
+QPoint MatrixView::getUnitCentralPoint(int modelX, int modelY) const
 {
     int x = modelX * baseUnitSize + baseUnitSize / 2;
     int y = modelY * baseUnitSize + baseUnitSize / 2;
@@ -97,7 +113,7 @@ QPoint MatrixView::getUnitPoint(int modelX, int modelY) const
     return QPoint(x, y);
 }
 
-QPoint MatrixView::getUnitPoint(QPoint modelPoint) const
+QPoint MatrixView::getUnitCentralPoint(QPoint modelPoint) const
 {
     int x = modelPoint.x() - modelOffsetX;
     int y = modelPoint.y() - modelOffsetY;
@@ -113,14 +129,65 @@ QPoint MatrixView::getUnitPoint(QPoint modelPoint) const
     return QPoint(x, y);
 }
 
-QPoint MatrixView::getviewOffsetPoint() const
+QPoint MatrixView::getUnitPoint(QPoint modelPoint) const
+{
+    int x = modelPoint.x() - modelOffsetX;
+    int y = modelPoint.y() - modelOffsetY;
+
+    if(x < 0 || x > viewColumn)
+        qDebug() << "Unit not in view!" << x << y;
+    if(y < 0 || y > viewRow)
+        qDebug() << "Unit not in view!" << x << y;
+
+    x = x * baseUnitSize;
+    y = y * baseUnitSize;
+
+    return QPoint(x, y);
+}
+
+QPoint MatrixView::getViewOffsetPoint() const
 {
     return QPoint(viewOffsetX, viewOffsetY);
+}
+
+QRect MatrixView::getUnitRect(QPoint modelPoint) const
+{
+    int x = modelPoint.x() - modelOffsetX;
+    int y = modelPoint.y() - modelOffsetY;
+
+    if(x < 0 || x > viewColumn)
+        qDebug() << "Unit not in view!" << x << y;
+    if(y < 0 || y > viewRow)
+        qDebug() << "Unit not in view!" << x << y;
+
+    QPoint topLeft = QPoint(x * baseUnitSize, y * baseUnitSize);
+    QPoint buttomRight = QPoint(++x * baseUnitSize - 1, ++y * baseUnitSize -1);
+
+    return QRect(topLeft, buttomRight);
+}
+
+QRect MatrixView::getSelectedModelRect() const
+{
+    QRect modelRect;
+
+    modelRect.setTopLeft(QPoint(selectedUnitRect.topLeft().x() / baseUnitSize + modelOffsetX,
+                                selectedUnitRect.topLeft().y() / baseUnitSize + modelOffsetY));
+    modelRect.setBottomRight(QPoint(selectedUnitRect.bottomRight().x() / baseUnitSize - 1 + modelOffsetX,
+                                    selectedUnitRect.bottomRight().y() / baseUnitSize - 1 + modelOffsetY));
+
+    //qDebug() << modelRect.isEmpty() << modelRect.isNull() << modelRect.isValid() << "Test selected model";
+
+    return modelRect;
 }
 
 int MatrixView::getBaseUnitSize() const
 {
     return baseUnitSize;
+}
+
+void MatrixView::selectedUnits(QRect select)
+{
+    selectedUnitRect = select;
 }
 
 void MatrixView::moveView(int horizontal, int vertical)
@@ -232,6 +299,7 @@ void MatrixView::paintEvent(QPaintEvent *)
 
     QImage image(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
 
+    //绘制模型图像
     for(int i = 0; i < viewColumn; ++i)
     {
         for(int j = 0; j < viewRow; ++j)
@@ -252,8 +320,9 @@ void MatrixView::paintEvent(QPaintEvent *)
         }
     }
 
-    painter.drawImage(0, 0, image);//绘制View
-    referenceLine(painter); //绘制参考线
+    painter.drawImage(0, 0, image);//绘制Image
+    drawReferenceLine(painter); //绘制参考线
+    drawSelectBox(painter);
 
     //qDebug() << size() << "-->This is size()";
 }
@@ -269,7 +338,7 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
     }
 }
 
-void MatrixView::referenceLine(QPainter &painter)
+void MatrixView::drawReferenceLine(QPainter &painter)
 {
     //基础单元为一个像素时取消参考线
     if(baseUnitSize <= 1)
@@ -331,4 +400,13 @@ void MatrixView::referenceLine(QPainter &painter)
 
     if(level < 0 || level > 4)
         qDebug() << level << "Line color error.";
+}
+
+void MatrixView::drawSelectBox(QPainter &painter)
+{
+    if(selectedUnitRect.isValid())
+    {
+        painter.setPen(VIEW::SELECT);
+        painter.drawRect(selectedUnitRect);
+    }
 }

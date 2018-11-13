@@ -95,8 +95,11 @@ void MatrixModel::updateModel()
 
 void MatrixModel::changeModelValue(int x, int y)
 {
-    if(x > WORLDSIZE || y > WORLDSIZE)
+    if(x > WORLDSIZE || y > WORLDSIZE || x < 0 || y < 0)
+    {
         qDebug() << "Over range!(change)" << x << y;
+        return;
+    }
 
     currentModel[x][y] = !currentModel[x][y];
 }

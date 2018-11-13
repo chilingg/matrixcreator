@@ -10,24 +10,33 @@ class MatrixView : public QWidget
 
 public:
     MatrixView(MatrixModel *model, QWidget *parent = 0);
+
     bool isInView(int clickedX, int clickedY);//返回view坐标中对应的model坐标
     bool isInView(QPoint pos);
+
     QPoint getModelPoint(int clickedX, int clickedY);
-    QPoint getUnitPoint(int modelX, int modelY) const;
-    QPoint getUnitPoint(QPoint modelPoint) const;
-    QPoint getviewOffsetPoint() const;
+    QPoint getModelPoint(QPoint clickedPos);
+    QPoint getUnitCentralPoint(int modelX, int modelY) const;
+    QPoint getUnitCentralPoint(QPoint modelPoint) const;
+    QPoint getUnitPoint(QPoint modelPoint) const;//暂弃
+    QRect getUnitRect(QPoint modelPoint) const;
+
+    QRect getSelectedModelRect() const;
+    QPoint getViewOffsetPoint() const;
     int getBaseUnitSize() const;
+
+    void selectedUnits(QRect select);
     void moveView(int horizontal, int vertical);
     void zoomView(int clickedX, int clickedY, bool zoomView);//true缩小，false放大
-    void updateViewData();
 
 protected:
     void paintEvent(QPaintEvent *);
+    void updateViewData();
+    void drawBaseUnit(int x, int y, QRgb color, QImage &image);//按baseUnitSize绘制基础单元
+    void drawReferenceLine(QPainter &painter);//绘制参考线
+    void drawSelectBox(QPainter &painter);
 
 private:
-    void drawBaseUnit(int x, int y, QRgb color, QImage &image);//按baseUnitSize绘制基础单元
-    void referenceLine(QPainter &painter);//绘制参考线
-
     MatrixModel *model;
     int baseUnitSize; //基础单位的大小
 
@@ -51,6 +60,8 @@ private:
     int viewRow;
 
     const int zoomList[9];
+
+    QRect selectedUnitRect;
 };
 
 namespace VIEW
@@ -79,6 +90,7 @@ namespace VIEW
     const QColor LUMINOSITY_5_255(255, 255, 255);//White
 
     const QColor WARNING(255, 0, 0);//Red
+    const QColor SELECT(0, 255, 255);//Cyan
 }
 
 #endif // MATRIXVIEW_H

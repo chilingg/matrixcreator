@@ -1,5 +1,5 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef MATRIXCONTROLLER_H
+#define MATRIXCONTROLLER_H
 
 #include <QMainWindow>
 #include <QMouseEvent>
@@ -10,17 +10,18 @@
 #include "matrixmodel.h"
 #include "matrixview.h"
 
-class MainWindow : public QMainWindow
+class MatriController : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    MatriController(QWidget *parent = 0);
+    ~MatriController();
 
 protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
+    void mouseDoubleClickEvent(QMouseEvent *event);
     void timerEvent(QTimerEvent *);
     void keyPressEvent(QKeyEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -29,7 +30,8 @@ private:
     MatrixModel *model;
     MatrixView *view;
     bool start;
-    QPoint movePos;
+    QPoint moveViewPos;
+    QRect selectRect;
 };
 
-#endif // MAINWINDOW_H
+#endif // MATRIXCONTROLLER_H
