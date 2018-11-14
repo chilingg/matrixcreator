@@ -10,6 +10,12 @@
 #include "matrixmodel.h"
 #include "matrixview.h"
 
+enum SelectTool
+{
+    POINT,
+    CIRCLE
+};
+
 class MatriController : public QMainWindow
 {
     Q_OBJECT
@@ -22,8 +28,9 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
-    void timerEvent(QTimerEvent *);
+    void timerEvent(QTimerEvent *event);
     void keyPressEvent(QKeyEvent *event);
+    void keyReleaseEvent(QKeyEvent *event);
     void wheelEvent(QWheelEvent *event);
 
 private:
@@ -32,6 +39,7 @@ private:
     bool start;
     QPoint moveViewPos;
     QRect selectRect;
+    SelectTool selectTool;
 };
 
 #endif // MATRIXCONTROLLER_H

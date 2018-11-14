@@ -103,6 +103,24 @@ void MatrixModel::changeModelValue(int x, int y)
     currentModel[x][y] = !currentModel[x][y];
 }
 
+void MatrixModel::clearModel(int x, int y, int widht, int height)
+{
+    qDebug() << x << y << widht << height;
+    if(x < 0 || y < 0 || x + widht > WORLDSIZE || y + height > WORLDSIZE)
+    {
+        //qDebug() << "Over range!(clear)" << x << y << widht << height;
+        return;
+    }
+
+    for(int i = x; i < widht + x; ++i)
+    {
+        for(int j = y; j < height + y; ++j)
+        {
+            currentModel[i][j] = 0;
+        }
+    }
+}
+
 int MatrixModel::getAroundValue(int x, int y)
 {
     int around_1X = x != 0 ? x - 1 : WORLDSIZE - 1;

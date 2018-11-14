@@ -29,6 +29,8 @@ public:
     void selectedUnits(QRect select);
     void moveView(int horizontal, int vertical);
     void zoomView(int clickedX, int clickedY, bool zoomView);//true缩小，false放大
+    void referenceLineOnOff();
+    void centerView();
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -60,9 +62,11 @@ private:
     int viewColumn;
     int viewRow;
 
-    const int zoomList[9];
+    const int zoomList[7];
+    const int ZOOMLEVEL = 7;
 
     QRect selectedUnitRect;
+    bool referenceLine;
 };
 
 namespace VIEW

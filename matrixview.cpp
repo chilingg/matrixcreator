@@ -9,8 +9,8 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       died(0),
       lived(1),
       dieColor(VIEW::LUMINOSITY_0_0.rgb()),
-      liveColer(VIEW::LUMINOSITY_4_187.rgb()),
-      zoomList{1,2,4,8,16,20,30,40,50}
+      liveColer(VIEW::LUMINOSITY_5_221.rgb()),
+      zoomList{1,2,4,8,16,32,64}
 {
     //Set window backgroundcolor
     QPalette pal = palette();
@@ -23,17 +23,14 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     viewOffsetX = 0;
     viewOffsetY = 0;
 
-    modelOffsetX = WORLDSIZE / 2;
-    modelOffsetY = WORLDSIZE / 2;
-    //如果可以，设置初始视图中点为100倍数号的单元。（PS:此时父窗口Size未设置）
-    modelOffsetX -= ((WORLDSIZE / 2) + (INIT_VIEW_WIDTH / baseUnitSize / 2)) % 100;
-    modelOffsetY -= ((WORLDSIZE / 2) + (INIT_VIEW_HEIGHT / baseUnitSize / 2)) % 100;
-    //qDebug() << WORLDSIZE / 2 << INIT_VIEW_WIDTH << "Test initial view.";
+    modelOffsetX = 0;
+    modelOffsetY = 0;
 
     viewColumn = 0;
     viewRow = 0;
 
     selectedUnitRect = QRect();
+    referenceLine = true;
 }
 
 bool MatrixView::isInView(int clickedX, int clickedY)
@@ -217,15 +214,15 @@ void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
     QPoint beforePoint = getModelPoint(clickedX, clickedY);
 
     //修正可能存在的错误
-    if(baseUnitSize < zoomList[0] || baseUnitSize > zoomList[8])
+    if(baseUnitSize < zoomList[0] || baseUnitSize > zoomList[ZOOMLEVEL - 1])
     {
         qDebug() << baseUnitSize << "Zoom value over!";
-        baseUnitSize < zoomList[0] ? baseUnitSize = zoomList[0] : baseUnitSize = zoomList[8];
+        baseUnitSize < zoomList[0] ? baseUnitSize = zoomList[0] : baseUnitSize = zoomList[ZOOMLEVEL - 1];
     }
 
     //计算当前缩放级别。考虑以后可能会有的自定义基础单元大小，使用while循环计算
     int level = 0;
-    while (level < 9)
+    while (level < ZOOMLEVEL)
     {
         if(zoomList[level] >= baseUnitSize)
         {
@@ -235,9 +232,9 @@ void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
         ++level;
     }
 
-    if(zoom && level != 8)
+    if(zoom && level != ZOOMLEVEL - 1)
         baseUnitSize = zoomList[level+1];
-    else if(zoom && level == 8)
+    else if(zoom && level == ZOOMLEVEL - 1)
         baseUnitSize = zoomList[level];
 
     if(!zoom && level != 0)
@@ -259,6 +256,23 @@ void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
     //qDebug() << baseUnitSize << level << "Test zoom";
 
     update();//在事件循环后重绘视图
+}
+
+void MatrixView::referenceLineOnOff()
+{
+    referenceLine = !referenceLine;
+}
+
+void MatrixView::centerView()
+{
+    modelOffsetX = WORLDSIZE / 2;
+    modelOffsetY = WORLDSIZE / 2;
+    //如果可以，设置初始视图中点为100倍数号的单元
+    modelOffsetX -= ((WORLDSIZE / 2) + (width() / baseUnitSize / 2)) % 100;
+    modelOffsetY -= ((WORLDSIZE / 2) + (height() / baseUnitSize / 2)) % 100;
+    qDebug() << width() << height() << "Test initial view.";
+
+    update();
 }
 
 void MatrixView::updateViewData()
@@ -325,9 +339,13 @@ void MatrixView::paintEvent(QPaintEvent *)
         }
     }
 
-    painter.drawImage(0, 0, image);//绘制Image
-    drawReferenceLine(painter); //绘制参考线
-    drawSelectBox(painter);
+    painter.drawImage(0, 0, image);//绘制模型单元
+
+    if(referenceLine)
+        drawReferenceLine(painter); //绘制参考线
+
+    if(selectedUnitRect.isValid()) //绘制选框
+        drawSelectBox(painter);
 
     //qDebug() << size() << "-->This is size()";
 }
@@ -352,7 +370,7 @@ void MatrixView::drawReferenceLine(QPainter &painter)
     int level = 0;//参考线明度等级
     const QColor lineColor[5] = {VIEW::LUMINOSITY_1_17.rgb(),
                                  VIEW::LUMINOSITY_1_34.rgb(),
-                                 VIEW::LUMINOSITY_2_68.rgb(),
+                                 VIEW::LUMINOSITY_1_51.rgb(),
                                  VIEW::LUMINOSITY_2_85.rgb(),
                                  VIEW::WARNING.rgb()
                                 };
@@ -409,9 +427,6 @@ void MatrixView::drawReferenceLine(QPainter &painter)
 
 void MatrixView::drawSelectBox(QPainter &painter)
 {
-    if(selectedUnitRect.isValid())
-    {
-        painter.setPen(VIEW::SELECT);
-        painter.drawRect(selectedUnitRect);
-    }
+    painter.setPen(VIEW::SELECT);
+    painter.drawRect(selectedUnitRect);
 }
