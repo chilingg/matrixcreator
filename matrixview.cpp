@@ -270,7 +270,7 @@ void MatrixView::centerView()
     //如果可以，设置初始视图中点为100倍数号的单元
     modelOffsetX -= ((WORLDSIZE / 2) + (width() / baseUnitSize / 2)) % 100;
     modelOffsetY -= ((WORLDSIZE / 2) + (height() / baseUnitSize / 2)) % 100;
-    qDebug() << width() << height() << "Test initial view.";
+    //qDebug() << width() << height() << "Test initial view.";
 
     update();
 }
@@ -280,9 +280,9 @@ void MatrixView::updateViewData()
     //计算视图中的模型行列
     viewColumn = 0;
     viewRow = 0;
-    while (viewColumn * baseUnitSize < width() - baseUnitSize)
+    while (viewColumn * baseUnitSize < width() - baseUnitSize && viewColumn < WORLDSIZE)
         ++viewColumn;
-    while (viewRow * baseUnitSize < height() - baseUnitSize)
+    while (viewRow * baseUnitSize < height() - baseUnitSize && viewRow < WORLDSIZE)
         ++viewRow;
 
     if(modelOffsetX + viewColumn > WORLDSIZE)
@@ -290,7 +290,7 @@ void MatrixView::updateViewData()
     if(modelOffsetX < 0)
     {
         modelOffsetX = 0;
-        viewColumn = WORLDSIZE;
+        //viewColumn = WORLDSIZE;
     }//检查模型列是否小于视图列，若是则更改视图大小
 
     if(modelOffsetY + viewRow > WORLDSIZE)
@@ -298,12 +298,13 @@ void MatrixView::updateViewData()
     if(modelOffsetY < 0)
     {
         modelOffsetY = 0;
-        viewRow = WORLDSIZE;
+        //viewRow = WORLDSIZE;
     }//检查模型行是否小于视图行，若是则更改视图大小
 
     //计算视图偏移量
     viewOffsetX = (width() - viewColumn * baseUnitSize) / 2;
     viewOffsetY = (height() - viewRow * baseUnitSize) / 2;
+    //qDebug() << viewOffsetX <<  width() << viewColumn << baseUnitSize << "viewOffset.";
 }
 
 void MatrixView::paintEvent(QPaintEvent *)

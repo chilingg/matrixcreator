@@ -1,5 +1,5 @@
 #include <QDebug>
-#include <QTimer>
+//#include <QTimer>
 #include "matrixcontroller.h"
 
 MatriController::MatriController(QWidget *parent)
@@ -19,7 +19,7 @@ MatriController::MatriController(QWidget *parent)
     selectRect = QRect();
     selectTool = POINT;
 
-    QTimer::singleShot(0, view, MatrixView::centerView);qDebug() << "-->In the timer";
+    //QTimer::singleShot(0, view, MatrixView::centerView);qDebug() << "-->In the timer";
 }
 
 MatriController::~MatriController()
@@ -186,7 +186,6 @@ void MatriController::mouseDoubleClickEvent(QMouseEvent *event)
 
 void MatriController::timerEvent(QTimerEvent *)
 {
-    qDebug() << width() << height() << "Test initial view.";
     if(start == false)
         return;
 
