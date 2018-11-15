@@ -5,16 +5,7 @@ MatrixModel::MatrixModel():
     currentModel(new int[WORLDSIZE][WORLDSIZE]),
     tempModel(new int[WORLDSIZE][WORLDSIZE])
 {
-    //qsrand(32);//随机测试
-    for(int i = 0; i < WORLDSIZE; ++i)
-    {
-        for(int j = 0; j < WORLDSIZE; ++j)
-        {
-            //currentModel[i][j] = qrand() % 16 ? 0 : 1;
-            currentModel[i][j] = 0;
-            tempModel[i][j] = 0;
-        }
-    }//初始化数组为0
+    clearAllModel();
 }
 
 MatrixModel::~MatrixModel()
@@ -105,7 +96,7 @@ void MatrixModel::changeModelValue(int x, int y)
 
 void MatrixModel::clearModel(int x, int y, int widht, int height)
 {
-    qDebug() << x << y << widht << height;
+    //qDebug() << x << y << widht << height;
     if(x < 0 || y < 0 || x + widht > WORLDSIZE || y + height > WORLDSIZE)
     {
         //qDebug() << "Over range!(clear)" << x << y << widht << height;
@@ -119,6 +110,20 @@ void MatrixModel::clearModel(int x, int y, int widht, int height)
             currentModel[i][j] = 0;
         }
     }
+}
+
+void MatrixModel::clearAllModel()
+{
+    //qsrand(32);//随机测试
+    for(int i = 0; i < WORLDSIZE; ++i)
+    {
+        for(int j = 0; j < WORLDSIZE; ++j)
+        {
+            //currentModel[i][j] = qrand() % 16 ? 0 : 1;
+            currentModel[i][j] = 0;
+            tempModel[i][j] = 0;
+        }
+    }//初始化数组为0
 }
 
 int MatrixModel::getAroundValue(int x, int y)

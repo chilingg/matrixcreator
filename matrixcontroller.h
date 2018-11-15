@@ -6,6 +6,7 @@
 #include <QTimerEvent>
 #include <QKeyEvent>
 #include <QWheelEvent>
+#include <QCursor>
 
 #include "matrixmodel.h"
 #include "matrixview.h"
@@ -28,6 +29,7 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
     void timerEvent(QTimerEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
@@ -39,7 +41,10 @@ private:
     bool start;
     QPoint moveViewPos;
     QRect selectRect;
+    QPoint clickedPos;
     SelectTool selectTool;
+    QCursor circleCursor;
+    QCursor pointCursor;
 };
 
 #endif // MATRIXCONTROLLER_H

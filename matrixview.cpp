@@ -1,5 +1,4 @@
 #include "matrixview.h"
-
 #include <QDebug>
 #include <QPainter>
 
@@ -31,6 +30,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
     selectedUnitRect = QRect();
     referenceLine = true;
+    centerOnOff = true;
 }
 
 bool MatrixView::isInView(int clickedX, int clickedY)
@@ -265,14 +265,14 @@ void MatrixView::referenceLineOnOff()
 
 void MatrixView::centerView()
 {
-    modelOffsetX = WORLDSIZE / 2;
-    modelOffsetY = WORLDSIZE / 2;
-    //如果可以，设置初始视图中点为100倍数号的单元
-    modelOffsetX -= ((WORLDSIZE / 2) + (width() / baseUnitSize / 2)) % 100;
-    modelOffsetY -= ((WORLDSIZE / 2) + (height() / baseUnitSize / 2)) % 100;
-    //qDebug() << width() << height() << "Test initial view.";
+    //qDebug() << "-->In the centerView";
 
-    update();
+    modelOffsetX = WORLDSIZE / 2 + width() / baseUnitSize / 2 - WORLDSIZE % 100;
+    modelOffsetY = WORLDSIZE / 2 + height() / baseUnitSize / 2 - WORLDSIZE % 100;
+    //如果可以，设置初始视图中点为100倍数号的单元
+    qDebug() << WORLDSIZE / 2 << width() / baseUnitSize / 2 << WORLDSIZE % 100 << "Test initial view.";
+
+    centerOnOff = false;
 }
 
 void MatrixView::updateViewData()
@@ -309,12 +309,14 @@ void MatrixView::updateViewData()
 
 void MatrixView::paintEvent(QPaintEvent *)
 {
-    //qDebug() << "V";
+    //qDebug() << "In PaintEvent";
 
-    QPainter painter(this);
+    if(centerOnOff)//模型与视图居中
+        centerView();
     updateViewData();
 
-    //添加坐标偏移，使模型居中于视图
+    QPainter painter(this);
+    //添加坐标偏移，使视图居中于窗口
     painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
     QImage image(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);

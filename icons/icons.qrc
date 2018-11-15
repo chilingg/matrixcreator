@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/cursor">
+        <file alias="circleSelect">circle.png</file>
+        <file alias="pointSelect">point.png</file>
+    </qresource>
+</RCC>

@@ -12,6 +12,7 @@ public:
     void updateModel(); //更新数据
     void changeModelValue(int x, int y); //修改模型的值
     void clearModel(int x, int y, int widht, int height);
+    void clearAllModel();
 
 protected:
     int getAroundValue(int x, int y);

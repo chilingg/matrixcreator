@@ -33,3 +33,6 @@ HEADERS  += \
     matrixview.h \
     constants.h \
     matrixcontroller.h
+
+RESOURCES += \
+    icons/icons.qrc

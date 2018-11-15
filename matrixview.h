@@ -67,6 +67,7 @@ private:
 
     QRect selectedUnitRect;
     bool referenceLine;
+    bool centerOnOff;
 };
 
 namespace VIEW

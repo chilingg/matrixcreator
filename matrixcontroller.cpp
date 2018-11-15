@@ -1,5 +1,4 @@
 #include <QDebug>
-//#include <QTimer>
 #include "matrixcontroller.h"
 
 MatriController::MatriController(QWidget *parent)
@@ -15,11 +14,14 @@ MatriController::MatriController(QWidget *parent)
 
     startTimer(1000/10);
     start = false;
-    moveViewPos = QPoint(0, 0);
+    moveViewPos = QPoint();
     selectRect = QRect();
+    clickedPos = QPoint();
     selectTool = POINT;
+    circleCursor = QCursor(QPixmap(":/cursor/circleSelect"), 0, 0);
+    pointCursor = QCursor(QPixmap(":/cursor/pointSelect"), 0, 0);
 
-    //QTimer::singleShot(0, view, MatrixView::centerView);qDebug() << "-->In the timer";
+    setCursor(pointCursor);
 }
 
 MatriController::~MatriController()
@@ -30,6 +32,8 @@ MatriController::~MatriController()
 
 void MatriController::mousePressEvent(QMouseEvent *event)
 {
+    qDebug() << view->getModelPoint(event->pos());
+
     //若不在view范围内则退出
     if(!(view->isInView(event->pos())))
     {
@@ -91,6 +95,8 @@ void MatriController::mousePressEvent(QMouseEvent *event)
             }
 
             QPoint modelPoint = view->getModelPoint(event->pos());
+            clickedPos = modelPoint;//记录刚被转换的模型坐标
+
             //点击的单元转换为相反状态
             model->changeModelValue(modelPoint.x(), modelPoint.y());
             view->update();
@@ -105,9 +111,17 @@ void MatriController::mousePressEvent(QMouseEvent *event)
 
 void MatriController::mouseMoveEvent(QMouseEvent *event)
 {
+    if(!(view->isInView(event->pos())))
+        return;
+
     if(event->buttons() == Qt::MiddleButton)
     {
         QPoint point = event->pos();
+
+        if(moveViewPos.isNull())
+        {
+            moveViewPos = event->pos();
+        }
 
         //移动的坐标与记录的坐标相差一个基础单元以上时触发视图移动
         if(point.x() - moveViewPos.x() >= view->getBaseUnitSize() ||
@@ -130,9 +144,6 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
 
     if(event->buttons() == Qt::LeftButton && start == false)
     {
-        if(!(view->isInView(event->pos())))
-            return;
-
         if(selectTool == CIRCLE)
         {
             if(selectRect.isEmpty())
@@ -163,6 +174,20 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
             view->selectedUnits(beforePos);
             view->update();
         }
+        else if(selectTool == POINT)
+        {
+            QPoint pos = view->getModelPoint(event->pos());
+
+            if(clickedPos.isNull())
+                clickedPos = pos;
+
+            if(clickedPos != pos)
+            {
+                model->changeModelValue(pos.x(), pos.y());
+                view->update();
+                clickedPos = pos;
+            }
+        }
     }
 }
 
@@ -184,6 +209,15 @@ void MatriController::mouseDoubleClickEvent(QMouseEvent *event)
     }
 }
 
+void MatriController::mouseReleaseEvent(QMouseEvent *event)
+{
+    if(event->button() == Qt::MiddleButton)
+    {
+        //qDebug() << "mouveViewPos = 0";
+        moveViewPos = QPoint();
+    }
+}
+
 void MatriController::timerEvent(QTimerEvent *)
 {
     if(start == false)
@@ -196,10 +230,24 @@ void MatriController::timerEvent(QTimerEvent *)
 
 void MatriController::keyPressEvent(QKeyEvent *event)
 {
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Semicolon)//ctrl+; 参考线开关
+    {
+        view->referenceLineOnOff();
+        view->update();
+    }
+
+    if(start == true && event->key() != Qt::Key_Space)//开始状态下只接收空格
+        return;
+
+    if(event->key() == Qt::Key_Space)//空格 开始暂停
+    {
+        start = !start;
+    }
+
     //键盘事件发生时，先处理选择对象
     if (selectRect.isValid())
     {
-        if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_F)//填充选框
+        if(event->modifiers() == Qt::ShiftModifier && event->key() == Qt::Key_F5)//shift+F5 反向选中
         {
             QRect models = view->getSelectedModelRect();
             //qDebug() << models << "Fill Selected models.";
@@ -214,14 +262,14 @@ void MatriController::keyPressEvent(QKeyEvent *event)
             }
             view->update();
         }
-        else if(event->key() == Qt::Key_Delete)
+        else if(event->key() == Qt::Key_Delete)//delete 删除选中
         {
             QRect selectArea = view->getSelectedModelRect();
             model->clearModel(selectArea.left(), selectArea.top(), selectArea.width(), selectArea.height());
             //qDebug() << view->getSelectedModelRect();
             view->update();
         }
-        else if(event->modifiers() != Qt::ControlModifier)
+        else if(event->modifiers() != Qt::ShiftModifier)
         {
             selectRect = QRect();
             view->selectedUnits(selectRect);
@@ -229,18 +277,38 @@ void MatriController::keyPressEvent(QKeyEvent *event)
         }
     }
 
-    if(event->key() == Qt::Key_Space)
-        start = !start;
-
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Semicolon)
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Delete)//ctrl+delete 清除全部
     {
-        view->referenceLineOnOff();
+        model->clearAllModel();
         view->update();
     }
 
-    if(event->modifiers() == Qt::ControlModifier)
+    if(event->key() == Qt::Key_Control)//ctrl 暂切选择工具
+    {
+        selectTool == POINT ? selectTool = CIRCLE : selectTool = POINT;
+        selectTool == POINT ? setCursor(pointCursor) : setCursor(circleCursor);
+    }
+    if(event->key() == Qt::Key_A)//a 点选
+    {
+        selectTool = POINT;
+        setCursor(pointCursor);
+    }
+    if(event->key() == Qt::Key_V)//v 框选
     {
         selectTool = CIRCLE;
+        setCursor(circleCursor);
+    }
+
+    if(event->key() == Qt::Key_F4)
+    {
+        view->centerView();
+        view->update();
+    }
+
+    if(event->key() == Qt::Key_Right)
+    {
+        model->updateModel();
+        view->update();
     }
 }
 
@@ -248,7 +316,8 @@ void MatriController::keyReleaseEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Control)
     {
-        selectTool = POINT;
+        selectTool == POINT ? selectTool = CIRCLE : selectTool = POINT;
+        selectTool == POINT ? setCursor(pointCursor) : setCursor(circleCursor);
     }
 }
 
