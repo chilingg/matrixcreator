@@ -267,10 +267,10 @@ void MatrixView::centerView()
 {
     //qDebug() << "-->In the centerView";
 
-    modelOffsetX = WORLDSIZE / 2 + width() / baseUnitSize / 2 - WORLDSIZE % 100;
-    modelOffsetY = WORLDSIZE / 2 + height() / baseUnitSize / 2 - WORLDSIZE % 100;
+    modelOffsetX = WORLDSIZE / 2 - width() / baseUnitSize / 2 - WORLDSIZE % 100 / 2;
+    modelOffsetY = WORLDSIZE / 2 - height() / baseUnitSize / 2 - WORLDSIZE % 100 / 2;
     //如果可以，设置初始视图中点为100倍数号的单元
-    qDebug() << WORLDSIZE / 2 << width() / baseUnitSize / 2 << WORLDSIZE % 100 << "Test initial view.";
+    qDebug() << WORLDSIZE / 2 << width() / baseUnitSize / 2 << WORLDSIZE % 100 / 2 << "Test initial view.";
 
     centerOnOff = false;
 }
