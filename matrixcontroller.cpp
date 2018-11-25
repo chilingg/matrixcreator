@@ -7,7 +7,7 @@ MatriController::MatriController(QWidget *parent)
       view(new MatrixView(model, this))
 {
     setWindowTitle(tr("MatrixCreator"));
-    //resize(INIT_VIEW_WIDTH, INIT_VIEW_HEIGHT);
+    resize(INIT_VIEW_WIDTH, INIT_VIEW_HEIGHT);
     setWindowState(Qt::WindowMaximized);
     setCentralWidget(view);
     //view->centerView();
@@ -32,7 +32,7 @@ MatriController::~MatriController()
 
 void MatriController::mousePressEvent(QMouseEvent *event)
 {
-    qDebug() << view->getModelPoint(event->pos());
+    //qDebug() << view->getModelPoint(event->pos());
 
     //若不在view范围内则退出
     if(!(view->isInView(event->pos())))
@@ -172,13 +172,14 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
             }
 
             view->selectedUnits(beforePos);
+            view->notRedraw();
             view->update();
         }
         else if(selectTool == POINT)
         {
             QPoint pos = view->getModelPoint(event->pos());
 
-            if(clickedPos.isNull())
+            if(clickedPos.isNull())//??
                 clickedPos = pos;
 
             if(clickedPos != pos)
@@ -186,6 +187,7 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
                 model->changeModelValue(pos.x(), pos.y());
                 view->update();
                 clickedPos = pos;
+                //考虑以一个临时区域显示并存储当前信息，鼠标释放后修改并入模型视图，用以解决延迟问题
             }
         }
     }
@@ -233,6 +235,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
     if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Semicolon)//ctrl+; 参考线开关
     {
         view->referenceLineOnOff();
+        view->notRedraw();
         view->update();
     }
 
@@ -314,6 +317,9 @@ void MatriController::keyPressEvent(QKeyEvent *event)
 
 void MatriController::keyReleaseEvent(QKeyEvent *event)
 {
+    if(start)
+        return;
+
     if(event->key() == Qt::Key_Control)
     {
         selectTool == POINT ? selectTool = CIRCLE : selectTool = POINT;

@@ -12,10 +12,10 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       zoomList{1,2,4,8,16,32,64}
 {
     //Set window backgroundcolor
-    QPalette pal = palette();
-    pal.setColor(QPalette::Background, VIEW::LUMINOSITY_1_51);
+    //QPalette pal = palette();
+    //pal.setColor(QPalette::Background, VIEW::LUMINOSITY_1_51);
     setAutoFillBackground(true);
-    setPalette(pal);
+    setPalette(QPalette(VIEW::LUMINOSITY_1_51));
 
     baseUnitSize = zoomList[3];//默认的一个单元大小
 
@@ -31,6 +31,9 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     selectedUnitRect = QRect();
     referenceLine = true;
     centerOnOff = true;
+
+    image = QImage();
+    redraw = true;
 }
 
 bool MatrixView::isInView(int clickedX, int clickedY)
@@ -270,9 +273,14 @@ void MatrixView::centerView()
     modelOffsetX = WORLDSIZE / 2 - width() / baseUnitSize / 2 - WORLDSIZE % 100 / 2;
     modelOffsetY = WORLDSIZE / 2 - height() / baseUnitSize / 2 - WORLDSIZE % 100 / 2;
     //如果可以，设置初始视图中点为100倍数号的单元
-    qDebug() << WORLDSIZE / 2 << width() / baseUnitSize / 2 << WORLDSIZE % 100 / 2 << "Test initial view.";
+    //qDebug() << WORLDSIZE / 2 << width() / baseUnitSize / 2 << WORLDSIZE % 100 / 2 << "Test initial view.";
 
     centerOnOff = false;
+}
+
+void MatrixView::notRedraw()
+{
+    redraw = false;
 }
 
 void MatrixView::updateViewData()
@@ -319,28 +327,35 @@ void MatrixView::paintEvent(QPaintEvent *)
     //添加坐标偏移，使视图居中于窗口
     painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
-    QImage image(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
-
-    //绘制模型图像
-    for(int i = 0; i < viewColumn; ++i)
+    //只有在需要的时候才重绘模型视图
+    if(redraw)
     {
-        for(int j = 0; j < viewRow; ++j)
+        image = QImage(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
+
+        //绘制模型图像
+        for(int i = 0; i < viewColumn; ++i)
         {
-            QRgb color;
+            for(int j = 0; j < viewRow; ++j)
+            {
+                QRgb color;
 
-            //Get modeldata and select color
-            int value = model->getModelValue(i + modelOffsetX, j + modelOffsetY);
-            if(value == died)
-                color = dieColor;
-            else if(value == lived)
-                color = liveColer;
-            else
-                color = qRgb(255, 0, 0);
+                //Get modeldata and select color
+                int value = model->getModelValue(i + modelOffsetX, j + modelOffsetY);
+                if(value == died)
+                    color = dieColor;
+                else if(value == lived)
+                    color = liveColer;
+                else
+                    color = qRgb(255, 0, 0);
 
-            //qDebug() << i << j << value << "-->This is value()";
-            drawBaseUnit(i * baseUnitSize, j * baseUnitSize, color, image);
+                //qDebug() << i << j << value << "-->This is value()";
+                drawBaseUnit(i * baseUnitSize, j * baseUnitSize, color, image);
+            }
         }
+
     }
+    else
+        redraw = true;
 
     painter.drawImage(0, 0, image);//绘制模型单元
 
@@ -351,6 +366,7 @@ void MatrixView::paintEvent(QPaintEvent *)
         drawSelectBox(painter);
 
     //qDebug() << size() << "-->This is size()";
+    //qDebug() << selectedUnitRect << "Selected unit rect";
 }
 
 void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)

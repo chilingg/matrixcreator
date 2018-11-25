@@ -31,6 +31,7 @@ public:
     void zoomView(int clickedX, int clickedY, bool zoomView);//true缩小，false放大
     void referenceLineOnOff();
     void centerView();
+    void notRedraw();//因历史遗留原因而增加的函数，若重写则在更改视图时直接把redraw改为true
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -68,6 +69,9 @@ private:
     QRect selectedUnitRect;
     bool referenceLine;
     bool centerOnOff;
+
+    QImage image;
+    bool redraw;
 };
 
 namespace VIEW
