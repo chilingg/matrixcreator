@@ -331,6 +331,7 @@ void MatrixView::paintEvent(QPaintEvent *)
     if(redraw)
     {
         image = QImage(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
+        auto modalP = model->getModel();
 
         //绘制模型图像
         for(int i = 0; i < viewColumn; ++i)
@@ -340,7 +341,7 @@ void MatrixView::paintEvent(QPaintEvent *)
                 QRgb color;
 
                 //Get modeldata and select color
-                int value = model->getModelValue(i + modelOffsetX, j + modelOffsetY);
+                int value = modalP[i + modelOffsetX][j + modelOffsetY];
                 if(value == died)
                     color = dieColor;
                 else if(value == lived)

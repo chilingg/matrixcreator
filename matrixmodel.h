@@ -3,6 +3,8 @@
 
 #include "constants.h"
 
+typedef const int (* PModle)[WORLDSIZE];
+
 class MatrixModel
 {
 public:
@@ -13,6 +15,7 @@ public:
     void changeModelValue(int x, int y); //修改模型的值
     void clearModel(int x, int y, int widht, int height);
     void clearAllModel();
+    PModle getModel();
 
 protected:
     int getAroundValue(int x, int y);

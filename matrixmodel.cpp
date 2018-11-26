@@ -126,6 +126,11 @@ void MatrixModel::clearAllModel()
     }//初始化数组为0
 }
 
+PModle MatrixModel::getModel()
+{
+    return currentModel;
+}
+
 int MatrixModel::getAroundValue(int x, int y)
 {
     int around_1X = x != 0 ? x - 1 : WORLDSIZE - 1;
