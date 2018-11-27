@@ -126,7 +126,7 @@ void MatrixModel::clearAllModel()
     }//初始化数组为0
 }
 
-PModle MatrixModel::getModel()
+const int (*MatrixModel::getModel())[WORLDSIZE]
 {
     return currentModel;
 }
