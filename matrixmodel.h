@@ -17,12 +17,23 @@ public:
     void clearAllModel();
     const int (*getModel())[WORLDSIZE];
 
+    //Thread
+    void updateModelThread();
+    bool status() const;
+    void beginUpdate();
+    int getUpdateLine();
+    void updateModelLine(int line);
+
 protected:
     int getAroundValue(int x, int y);
 
 private:
     int(* currentModel)[WORLDSIZE];
     int(* tempModel)[WORLDSIZE];
+
+    //Thread
+    bool currentStatus;
+    int updateLine;
 };
 
 #endif // MATRIXMODEL_H

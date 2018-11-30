@@ -1,5 +1,6 @@
 #include <QDebug>
 #include "matrixmodel.h"
+#include "updatethread.h"
 
 MatrixModel::MatrixModel():
     currentModel(new int[WORLDSIZE][WORLDSIZE]),
@@ -13,8 +14,8 @@ MatrixModel::~MatrixModel()
     delete []currentModel;
     delete []tempModel;
 
-    currentModel = 0;
-    tempModel = 0;
+    currentModel = nullptr;
+    tempModel = nullptr;
 }
 
 int MatrixModel::getModelValue(int x, int y)
@@ -126,6 +127,58 @@ void MatrixModel::clearAllModel()
     }//初始化数组为0
 }
 
+void MatrixModel::updateModelThread()
+{
+    beginUpdate();
+
+    UpdateThread *thread[THREADS];
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        thread[i] = new UpdateThread(this);
+        thread[i]->start();
+    }
+
+    while (status());
+
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        //thread[i]->terminate();
+        thread[i]->wait();
+
+        delete thread[i];
+    }
+
+    //把current指向新模型，temp指向旧模型
+    int(* tempP)[WORLDSIZE] = currentModel;
+    currentModel = tempModel;
+    tempModel = tempP;
+}
+
+bool MatrixModel::status() const
+{
+    return currentStatus;
+}
+
+void MatrixModel::beginUpdate()
+{
+    currentStatus = true;
+}
+
+int MatrixModel::getUpdateLine()
+{
+    if(updateLine >= WORLDSIZE)
+    {
+        updateLine = 0;
+        currentStatus = false;
+        return -1;
+    }
+
+    if(!currentStatus)
+        return -1;
+
+    return updateLine++;
+}
+
 const int (*MatrixModel::getModel())[WORLDSIZE]
 {
     return currentModel;
@@ -167,4 +220,54 @@ int MatrixModel::getAroundValue(int x, int y)
             + currentModel[around_6X][around_6Y];
 
     return aroundValue;
+}
+
+void MatrixModel::updateModelLine(int line)
+{
+    //qDebug() << updateLine << "UpdateLine";
+    if(line < 0)
+        qDebug() << "Line error!";
+
+    for(int j = 0; j < WORLDSIZE; ++j)
+    {
+        int aroundValue = getAroundValue(line, j);
+        aroundValue += currentModel[line][j] ? 10 : 0;//aroundValue大于8则当前状态为生
+
+        //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
+        tempModel[line][j] = currentModel[line][j];
+        switch (aroundValue)
+        {
+        case 0:
+        case 1:
+        case 2:
+            break;
+        case 3:
+            tempModel[line][j] = 1;
+            break;
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            break;
+        case 10:
+        case 11:
+            tempModel[line][j] = 0;
+            break;
+        case 12:
+        case 13:
+            break;
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 18:
+            tempModel[line][j] = 0;
+            break;
+        default:
+            qDebug() << "AroundValue Over range!" << aroundValue ;
+            break;
+        }
+    }
+    //qDebug() << line << "In updating...";
 }

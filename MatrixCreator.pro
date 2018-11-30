@@ -26,13 +26,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += main.cpp\
     matrixmodel.cpp \
     matrixview.cpp \
-    matrixcontroller.cpp
+    matrixcontroller.cpp \
+    updatethread.cpp
 
 HEADERS  += \
     matrixmodel.h \
     matrixview.h \
     constants.h \
-    matrixcontroller.h
+    matrixcontroller.h \
+    updatethread.h
 
 RESOURCES += \
     icons/icons.qrc

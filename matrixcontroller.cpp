@@ -226,7 +226,7 @@ void MatriController::timerEvent(QTimerEvent *)
         return;
 
     //qDebug() << "-->In the timer";
-    model->updateModel();
+    model->updateModelThread();
     view->update();
 }
 
