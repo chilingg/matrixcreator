@@ -7,6 +7,7 @@ MatrixModel::MatrixModel():
     tempModel(new int[WORLDSIZE][WORLDSIZE])
 {
     clearAllModel();
+    updateLine = 0;
 }
 
 MatrixModel::~MatrixModel()
@@ -166,6 +167,11 @@ void MatrixModel::beginUpdate()
 
 int MatrixModel::getUpdateLine()
 {
+    //qDebug() << "In getUpdateLine..." << updateLine;
+
+    //线程的互斥锁，当locker析构后下一个县城才能进入
+    QMutexLocker locker(&mutex);
+
     if(updateLine >= WORLDSIZE)
     {
         updateLine = 0;
@@ -219,12 +225,58 @@ int MatrixModel::getAroundValue(int x, int y)
             + currentModel[around_9X][around_9Y]
             + currentModel[around_6X][around_6Y];
 
+    if(aroundValue > 8)
+    {
+        qDebug() << "aroundValue overflow!" << x << y;
+
+        if(around_1X >= WORLDSIZE || around_1X < 0)
+            qDebug() << around_1X << "around_1X";
+        if(around_1Y > WORLDSIZE || around_1Y < 0)
+            qDebug() << around_1Y << "around_1Y";
+
+        if(around_2X >= WORLDSIZE || around_2X < 0)
+            qDebug() << around_2X << "around_2X";
+        if(around_2Y > WORLDSIZE || around_2Y < 0)
+            qDebug() << around_2Y << "around_2Y";
+
+        if(around_3X >= WORLDSIZE || around_3X < 0)
+            qDebug() << around_3X << "around_3X";
+        if(around_3Y >= WORLDSIZE || around_3Y < 0)
+            qDebug() << around_3Y << "around_3Y";
+
+        if(around_4X >= WORLDSIZE || around_4X < 0)
+            qDebug() << around_4X << "around_4X";
+        if(around_4Y >= WORLDSIZE || around_4Y < 0)
+            qDebug() << around_4Y << "around_4Y";
+
+        if(around_6X >= WORLDSIZE || around_6X < 0)
+            qDebug() << around_6X << "around_6X";
+        if(around_6Y >= WORLDSIZE || around_6Y < 0)
+            qDebug() << around_6Y << "around_6Y";
+
+        if(around_7X >= WORLDSIZE || around_7X < 0)
+            qDebug() << around_7X << "around_7X";
+        if(around_7Y >= WORLDSIZE || around_7Y < 0)
+            qDebug() << around_7Y << "around_7Y";
+
+        if(around_8X >= WORLDSIZE || around_8X < 0)
+            qDebug() << around_8X << "around_8X";
+        if(around_8Y >= WORLDSIZE || around_8Y < 0)
+            qDebug() << around_8Y << "around_8Y";
+
+        if(around_9X > WORLDSIZE || around_9X < 0)
+            qDebug() << around_9X << "around_9X";
+        if(around_9Y > WORLDSIZE || around_9Y < 0)
+            qDebug() << around_9Y << "around_9Y";
+    }
+
     return aroundValue;
 }
 
 void MatrixModel::updateModelLine(int line)
 {
     //qDebug() << updateLine << "UpdateLine";
+
     if(line < 0)
         qDebug() << "Line error!";
 

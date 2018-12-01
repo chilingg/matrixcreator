@@ -2,6 +2,8 @@
 #define MATRIXMODEL_H
 
 #include "constants.h"
+#include <QMutex>
+#include <QMutexLocker>
 
 //typedef const int (* PModle)[WORLDSIZE];
 
@@ -34,6 +36,7 @@ private:
     //Thread
     bool currentStatus;
     int updateLine;
+    QMutex mutex;
 };
 
 #endif // MATRIXMODEL_H

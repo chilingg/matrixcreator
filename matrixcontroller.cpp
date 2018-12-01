@@ -12,7 +12,7 @@ MatriController::MatriController(QWidget *parent)
     setCentralWidget(view);
     //view->centerView();
 
-    startTimer(1000/10);
+    startTimer(1000/24);
     start = false;
     moveViewPos = QPoint();
     selectRect = QRect();
@@ -310,7 +310,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_Right)
     {
-        model->updateModel();
+        model->updateModelThread();
         view->update();
     }
 }
