@@ -366,6 +366,8 @@ void MatrixView::paintEvent(QPaintEvent *)
     if(selectedUnitRect.isValid()) //绘制选框
         drawSelectBox(painter);
 
+    painter.setPen(QColor(VIEW::WARNING));
+    painter.drawText(10, 20, tr("FPS: 20.0"));
     //qDebug() << size() << "-->This is size()";
     //qDebug() << selectedUnitRect << "Selected unit rect";
 }

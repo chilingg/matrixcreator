@@ -27,14 +27,16 @@ SOURCES += main.cpp\
     matrixmodel.cpp \
     matrixview.cpp \
     matrixcontroller.cpp \
-    updatethread.cpp
+    updatethread.cpp \
+    ftpthread.cpp
 
 HEADERS  += \
     matrixmodel.h \
     matrixview.h \
     constants.h \
     matrixcontroller.h \
-    updatethread.h
+    updatethread.h \
+    ftpthread.h
 
 RESOURCES += \
     icons/icons.qrc
