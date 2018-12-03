@@ -2,6 +2,7 @@
 #define MATRIXVIEW_H
 
 #include <QWidget>
+#include "ftpthread.h"
 #include "matrixmodel.h"
 
 class MatrixView : public QWidget
@@ -10,6 +11,7 @@ class MatrixView : public QWidget
 
 public:
     MatrixView(MatrixModel *model, QWidget *parent = 0);
+    ~MatrixView();
 
     bool isInView(int clickedX, int clickedY);//返回view坐标中对应的model坐标
     bool isInView(QPoint pos);
@@ -32,6 +34,9 @@ public:
     void referenceLineOnOff();
     void centerView();
     void notRedraw();//因历史遗留原因而增加的函数，若重写则在更改视图时直接把redraw改为true
+
+    void ftpDisplay();
+    void ftpNoDisplay();
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -72,6 +77,12 @@ private:
 
     QImage image;
     bool redraw;
+
+    //ftp计算
+    int ftp;
+    int sum;
+    FTPThread ftpThread;
+    bool ftpOnOff;
 };
 
 namespace VIEW

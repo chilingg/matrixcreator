@@ -3,18 +3,19 @@
 
 #include <QThread>
 
-class ftpThread : public QThread
+class FTPThread : public QThread
 {
     Q_OBJECT
 public:
-    explicit ftpThread(double &ftp, QObject *parent = nullptr);
+    explicit FTPThread(int &sum, int &ftp, QObject *parent = nullptr);
     void finished();
 
 protected:
     void run();
 
 private:
-    double &ftp;
+    int &sum;
+    int &ftp;
     bool onOff;
 
 signals:

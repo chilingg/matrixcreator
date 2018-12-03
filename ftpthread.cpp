@@ -1,23 +1,36 @@
 #include "ftpthread.h"
 #include <QTime>
+#include <QDebug>
 
-ftpThread::ftpThread(double &f, QObject *parent) :
+FTPThread::FTPThread(int &sum, int &ftp, QObject *parent) :
     QThread(parent),
-    ftp(f)
+    sum(sum),
+    ftp(ftp)
 {
     onOff = true;
 }
 
-void ftpThread::run()
+void FTPThread::run()
 {
-    QTime
+    QTime timer;
+    timer.start();
+    int before = 0;
+    int now = 0;
+
     while (onOff)
     {
-
+        now = timer.elapsed() / 1000;
+        if(now != before)
+        {
+            //qDebug() << "In ftp thread." << now << sum;
+            before = now;
+            ftp = sum;
+            sum = 0;
+        }
     }
 }
 
-void ftpThread::finished()
+void FTPThread::finished()
 {
     onOff = false;
 }

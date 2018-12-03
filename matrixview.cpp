@@ -9,7 +9,10 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       lived(1),
       dieColor(VIEW::LUMINOSITY_0_0.rgb()),
       liveColer(VIEW::LUMINOSITY_5_221.rgb()),
-      zoomList{1,2,4,8,16,32,64}
+      zoomList{1,2,4,8,16,32,64},
+      ftp(0),
+      sum(0),
+      ftpThread(sum, ftp)
 {
     //Set window backgroundcolor
     //QPalette pal = palette();
@@ -34,6 +37,16 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
     image = QImage();
     redraw = true;
+
+    ftpOnOff = false;
+    ftpDisplay();
+}
+
+MatrixView::~MatrixView()
+{
+    ftpThread.finished();
+    ftpThread.wait();
+    //qDebug() << "Offed ftp thread.";
 }
 
 bool MatrixView::isInView(int clickedX, int clickedY)
@@ -283,6 +296,17 @@ void MatrixView::notRedraw()
     redraw = false;
 }
 
+void MatrixView::ftpDisplay()
+{
+    ftpThread.start();
+    ftpOnOff = true;
+}
+
+void MatrixView::ftpNoDisplay()
+{
+    ftpThread.finished();
+}
+
 void MatrixView::updateViewData()
 {
     //计算视图中的模型行列
@@ -318,6 +342,8 @@ void MatrixView::updateViewData()
 void MatrixView::paintEvent(QPaintEvent *)
 {
     //qDebug() << "In PaintEvent";
+
+    sum++;//sum和ftp在ftpThread中修改
 
     if(centerOnOff)//模型与视图居中
         centerView();
@@ -366,8 +392,12 @@ void MatrixView::paintEvent(QPaintEvent *)
     if(selectedUnitRect.isValid()) //绘制选框
         drawSelectBox(painter);
 
-    painter.setPen(QColor(VIEW::WARNING));
-    painter.drawText(10, 20, tr("FPS: 20.0"));
+    if(ftpOnOff)
+    {
+        painter.setPen(QColor(VIEW::WARNING));
+        painter.drawText(10, 20, tr("FPS: %1").arg(ftp));
+    }
+
     //qDebug() << size() << "-->This is size()";
     //qDebug() << selectedUnitRect << "Selected unit rect";
 }
