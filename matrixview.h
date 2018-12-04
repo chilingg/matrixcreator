@@ -2,7 +2,7 @@
 #define MATRIXVIEW_H
 
 #include <QWidget>
-#include "ftpthread.h"
+#include "fpsthread.h"
 #include "matrixmodel.h"
 
 class MatrixView : public QWidget
@@ -35,8 +35,8 @@ public:
     void centerView();
     void notRedraw();//因历史遗留原因而增加的函数，若重写则在更改视图时直接把redraw改为true
 
-    void ftpDisplay();
-    void ftpNoDisplay();
+    void fpsDisplay();
+    void fpsNoDisplay();
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -44,6 +44,7 @@ protected:
     void drawBaseUnit(int x, int y, QRgb color, QImage &image);//按baseUnitSize绘制基础单元
     void drawReferenceLine(QPainter &painter);//绘制参考线
     void drawSelectBox(QPainter &painter);
+    void drawFPSText(QPainter &painter);
 
 private:
     MatrixModel *model;
@@ -78,11 +79,11 @@ private:
     QImage image;
     bool redraw;
 
-    //ftp计算
-    int ftp;
+    //fps计算
+    int fps;
     int sum;
-    FTPThread ftpThread;
-    bool ftpOnOff;
+    FPSThread fpsThread;
+    bool fpsOnOff;
 };
 
 namespace VIEW

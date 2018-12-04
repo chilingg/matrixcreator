@@ -10,9 +10,9 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       dieColor(VIEW::LUMINOSITY_0_0.rgb()),
       liveColer(VIEW::LUMINOSITY_5_221.rgb()),
       zoomList{1,2,4,8,16,32,64},
-      ftp(0),
+      fps(0),
       sum(0),
-      ftpThread(sum, ftp)
+      fpsThread(sum, fps)
 {
     //Set window backgroundcolor
     //QPalette pal = palette();
@@ -38,15 +38,15 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     image = QImage();
     redraw = true;
 
-    ftpOnOff = false;
-    ftpDisplay();
+    fpsOnOff = false;
+    fpsDisplay();
 }
 
 MatrixView::~MatrixView()
 {
-    ftpThread.finished();
-    ftpThread.wait();
-    //qDebug() << "Offed ftp thread.";
+    fpsThread.finished();
+    fpsThread.wait();
+    //qDebug() << "Offed fps thread.";
 }
 
 bool MatrixView::isInView(int clickedX, int clickedY)
@@ -296,15 +296,15 @@ void MatrixView::notRedraw()
     redraw = false;
 }
 
-void MatrixView::ftpDisplay()
+void MatrixView::fpsDisplay()
 {
-    ftpThread.start();
-    ftpOnOff = true;
+    fpsThread.start();
+    fpsOnOff = true;
 }
 
-void MatrixView::ftpNoDisplay()
+void MatrixView::fpsNoDisplay()
 {
-    ftpThread.finished();
+    fpsThread.finished();
 }
 
 void MatrixView::updateViewData()
@@ -343,7 +343,7 @@ void MatrixView::paintEvent(QPaintEvent *)
 {
     //qDebug() << "In PaintEvent";
 
-    sum++;//sum和ftp在ftpThread中修改
+    sum++;//sum和fps在fpsThread中修改
 
     if(centerOnOff)//模型与视图居中
         centerView();
@@ -392,11 +392,8 @@ void MatrixView::paintEvent(QPaintEvent *)
     if(selectedUnitRect.isValid()) //绘制选框
         drawSelectBox(painter);
 
-    if(ftpOnOff)
-    {
-        painter.setPen(QColor(VIEW::WARNING));
-        painter.drawText(10, 20, tr("FPS: %1").arg(ftp));
-    }
+    if(fpsOnOff)
+        drawFPSText(painter);
 
     //qDebug() << size() << "-->This is size()";
     //qDebug() << selectedUnitRect << "Selected unit rect";
@@ -481,4 +478,50 @@ void MatrixView::drawSelectBox(QPainter &painter)
 {
     painter.setPen(VIEW::SELECT);
     painter.drawRect(selectedUnitRect);
+}
+
+void MatrixView::drawFPSText(QPainter &painter)
+{
+    QPoint point(10, 15);
+
+    static QPixmap fpsText(":/texts/FPS");
+    static QPixmap number[10]
+    {
+                QPixmap(":/texts/0"),
+                QPixmap(":/texts/1"),
+                QPixmap(":/texts/2"),
+                QPixmap(":/texts/3"),
+                QPixmap(":/texts/4"),
+                QPixmap(":/texts/5"),
+                QPixmap(":/texts/6"),
+                QPixmap(":/texts/7"),
+                QPixmap(":/texts/8"),
+                QPixmap(":/texts/9"),
+    };
+
+    painter.setPen(QColor(VIEW::WARNING));
+    painter.drawPixmap(point,fpsText);
+    point.setX(point.x() + fpsText.width());
+
+    if(fps >= 100)
+    {
+        painter.drawPixmap(point, number[fps/100]);
+        point.setX(point.x() + number[0].width());
+
+        painter.drawPixmap(point, number[(fps%100)/10]);
+        point.setX(point.x() + number[0].width());
+
+        painter.drawPixmap(point, number[fps%10]);
+    }else if(fps >= 10)
+    {
+        painter.drawPixmap(point, number[fps/10]);
+        point.setX(point.x() + number[0].width());
+
+        painter.drawPixmap(point, number[fps%10]);
+    }else
+    {
+        painter.drawPixmap(point, number[fps]);
+    }
+
+    //qDebug() << "fps: " << fps;
 }
