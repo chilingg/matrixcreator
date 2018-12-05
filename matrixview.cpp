@@ -40,16 +40,10 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     sum = 0;
     fpsOnOff = true;
     time.start();
-    //startFPSCount();
 }
 
 MatrixView::~MatrixView()
 {
-    if(fpsOnOff)
-    {
-        //stopFPSCount();
-    }
-
     //qDebug() << "Offed fps thread.";
 }
 
@@ -126,7 +120,7 @@ QPoint MatrixView::getUnitCentralPoint(int modelX, int modelY) const
 {
     int x = modelX * baseUnitSize + baseUnitSize / 2;
     int y = modelY * baseUnitSize + baseUnitSize / 2;
-    
+
     return QPoint(x, y);
 }
 
@@ -301,18 +295,6 @@ void MatrixView::notRedraw()
     redraw = false;
 }
 
-void MatrixView::startFPSCount()
-{
-    fpsOnOff = true;
-    future = QtConcurrent::run(this, &MatrixView::FPSCount);
-}
-
-void MatrixView::stopFPSCount()
-{
-    fpsOnOff = false;
-    future.waitForFinished();
-}
-
 void MatrixView::updateViewData()
 {
     //计算视图中的模型行列
@@ -348,9 +330,6 @@ void MatrixView::updateViewData()
 void MatrixView::paintEvent(QPaintEvent *)
 {
     //qDebug() << "In PaintEvent";
-
-    sum++;//sum和fps在fpsThread中修改
-    FTPCount2();
 
     if(centerOnOff)//模型与视图居中
         centerView();
@@ -405,7 +384,11 @@ void MatrixView::paintEvent(QPaintEvent *)
         drawSelectBox(painter);
 
     if(fpsOnOff)
+    {
+        sum++;//sum和fps在fpsThread中修改
+        FTPCount();
         drawFPSText(painter);
+    }
 
     //qDebug() << size() << "-->This is size()";
     //qDebug() << selectedUnitRect << "Selected unit rect";
@@ -551,31 +534,11 @@ void MatrixView::drawFPSText(QPainter &painter)
     //qDebug() << "fps: " << fps;
 }
 
-void MatrixView::FPSCount()
-{
-    QTime timer;
-    timer.start();
-    int before = 0;
-    int now = 0;
-
-    while (fpsOnOff)
-    {
-        now = timer.elapsed() / 1000;
-        if(now != before)
-        {
-            //qDebug() << "In fps thread." << now << sum;
-            before = now;
-            fps = sum;
-            sum = 0;
-        }
-    }
-}
-
-void MatrixView::FTPCount2()
+void MatrixView::FTPCount()
 {
     static int interval = time.elapsed();
 
-    if(sum == 7)
+    if(sum == 8)
     {
         //qDebug() << "fps: " << (time.elapsed() - interval);
         fps = 1000.0 / (time.elapsed() - interval) * 8.0;

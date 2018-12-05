@@ -10,7 +10,7 @@ class MatrixView : public QWidget
     Q_OBJECT
 
 public:
-    MatrixView(MatrixModel *model, QWidget *parent = 0);
+    MatrixView(MatrixModel *model, QWidget *parent = nullptr);
     ~MatrixView();
 
     bool isInView(int clickedX, int clickedY);//返回view坐标中对应的model坐标
@@ -35,10 +35,7 @@ public:
     void centerView();
     void notRedraw();//因历史遗留原因而增加的函数，若重写则在更改视图时直接把redraw改为true
 
-    void startFPSCount();
-    void stopFPSCount();
-    void FPSCount();
-    void FTPCount2();
+    void FTPCount();
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -84,7 +81,6 @@ private:
     //fps计算
     double fps;
     int sum;
-    QFuture<void> future;
     bool fpsOnOff;
 
     //fps计算2
