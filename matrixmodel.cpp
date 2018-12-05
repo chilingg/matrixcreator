@@ -1,5 +1,5 @@
 #include <QDebug>
-#include <QtConcurrent/QtConcurrent>
+#include <QtConcurrent>
 #include "matrixmodel.h"
 
 MatrixModel::MatrixModel():

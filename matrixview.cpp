@@ -1,6 +1,7 @@
 #include "matrixview.h"
 #include <QDebug>
 #include <QPainter>
+#include <QTime>
 
 MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     :QWidget(parent),
@@ -9,10 +10,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       lived(1),
       dieColor(VIEW::LUMINOSITY_0_0.rgb()),
       liveColer(VIEW::LUMINOSITY_5_221.rgb()),
-      zoomList{1,2,4,8,16,32,64},
-      fps(0),
-      sum(0),
-      fpsThread(sum, fps)
+      zoomList{1,2,4,8,16,32,64}
 {
     //Set window backgroundcolor
     QPalette pal = palette();
@@ -38,14 +36,19 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     image = QImage();
     redraw = true;
 
+    fps = 0;
+    sum = 0;
     fpsOnOff = false;
-    fpsDisplay();
+    startFPSCount();
 }
 
 MatrixView::~MatrixView()
 {
-    fpsThread.finished();
-    fpsThread.wait();
+    if(fpsOnOff)
+    {
+        stopFPSCount();
+    }
+
     //qDebug() << "Offed fps thread.";
 }
 
@@ -297,15 +300,16 @@ void MatrixView::notRedraw()
     redraw = false;
 }
 
-void MatrixView::fpsDisplay()
+void MatrixView::startFPSCount()
 {
-    fpsThread.start();
     fpsOnOff = true;
+    future = QtConcurrent::run(this, &MatrixView::FPSCount);
 }
 
-void MatrixView::fpsNoDisplay()
+void MatrixView::stopFPSCount()
 {
-    fpsThread.finished();
+    fpsOnOff = false;
+    future.waitForFinished();
 }
 
 void MatrixView::updateViewData()
@@ -530,4 +534,24 @@ void MatrixView::drawFPSText(QPainter &painter)
     }
 
     //qDebug() << "fps: " << fps;
+}
+
+void MatrixView::FPSCount()
+{
+    QTime timer;
+    timer.start();
+    int before = 0;
+    int now = 0;
+
+    while (fpsOnOff)
+    {
+        now = timer.elapsed() / 1000;
+        if(now != before)
+        {
+            //qDebug() << "In fps thread." << now << sum;
+            before = now;
+            fps = sum;
+            sum = 0;
+        }
+    }
 }
