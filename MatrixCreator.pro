@@ -27,7 +27,6 @@ SOURCES += main.cpp\
     matrixmodel.cpp \
     matrixview.cpp \
     matrixcontroller.cpp \
-    updatethread.cpp \
     fpsthread.cpp
 
 HEADERS  += \
@@ -35,7 +34,6 @@ HEADERS  += \
     matrixview.h \
     constants.h \
     matrixcontroller.h \
-    updatethread.h \
     fpsthread.h
 
 RESOURCES += \

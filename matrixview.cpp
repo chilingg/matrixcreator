@@ -15,10 +15,10 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
       fpsThread(sum, fps)
 {
     //Set window backgroundcolor
-    //QPalette pal = palette();
-    //pal.setColor(QPalette::Background, VIEW::LUMINOSITY_1_51);
+    QPalette pal = palette();
+    pal.setColor(QPalette::Background, VIEW::LUMINOSITY_1_51);
     setAutoFillBackground(true);
-    setPalette(QPalette(VIEW::LUMINOSITY_1_51));
+    setPalette(pal);
 
     baseUnitSize = zoomList[3];//默认的一个单元大小
 

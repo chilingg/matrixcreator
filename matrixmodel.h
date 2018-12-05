@@ -4,8 +4,12 @@
 #include "constants.h"
 #include <QMutex>
 #include <QMutexLocker>
+#include <QThread>
 
 //typedef const int (* PModle)[WORLDSIZE];
+
+//MatrixModel的附属类，使用多线程更新模型
+class UpdateThread;
 
 class MatrixModel
 {
@@ -37,6 +41,24 @@ private:
     bool currentStatus;
     int updateLine;
     QMutex mutex;
+    UpdateThread *thread[THREADS];
+};
+
+//MatrixModel的附属类，使用多线程更新模型
+class UpdateThread : public QThread
+{
+    Q_OBJECT
+public:
+    explicit UpdateThread(MatrixModel *m, QObject *parent = nullptr);
+
+protected:
+    void run();
+private:
+    MatrixModel *model;
+
+signals:
+
+public slots:
 };
 
 #endif // MATRIXMODEL_H

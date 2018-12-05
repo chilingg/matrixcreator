@@ -1,6 +1,5 @@
 #include <QDebug>
 #include "matrixmodel.h"
-#include "updatethread.h"
 
 MatrixModel::MatrixModel():
     currentModel(new int[WORLDSIZE][WORLDSIZE]),
@@ -8,6 +7,12 @@ MatrixModel::MatrixModel():
 {
     clearAllModel();
     updateLine = 0;
+
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        thread[i] = new UpdateThread(this);
+    }
+
 }
 
 MatrixModel::~MatrixModel()
@@ -15,8 +20,14 @@ MatrixModel::~MatrixModel()
     delete []currentModel;
     delete []tempModel;
 
-    currentModel = nullptr;
-    tempModel = nullptr;
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        //thread[i]->terminate();
+        thread[i]->wait();
+
+        delete thread[i];
+    }
+
 }
 
 int MatrixModel::getModelValue(int x, int y)
@@ -132,22 +143,12 @@ void MatrixModel::updateModelThread()
 {
     beginUpdate();
 
-    UpdateThread *thread[THREADS];
     for(size_t i = 0; i < THREADS; ++i)
     {
-        thread[i] = new UpdateThread(this);
         thread[i]->start();
     }
 
     while (status());
-
-    for(size_t i = 0; i < THREADS; ++i)
-    {
-        //thread[i]->terminate();
-        thread[i]->wait();
-
-        delete thread[i];
-    }
 
     //把current指向新模型，temp指向旧模型
     int(* tempP)[WORLDSIZE] = currentModel;
@@ -322,4 +323,29 @@ void MatrixModel::updateModelLine(int line)
         }
     }
     //qDebug() << line << "In updating...";
+}
+
+//************************************************
+//updateThread class
+UpdateThread::UpdateThread(MatrixModel *m, QObject *parent) :
+    QThread(parent),
+    model(m)
+{
+
+}
+
+void UpdateThread::run()
+{
+    while (true)
+    {
+        int line = model->getUpdateLine();
+        //qDebug() << "In thread run..." << line;
+
+        if(line < 0)
+            break;
+        if(line >= WORLDSIZE)
+            qDebug() << "Overflow line" << line;
+
+        model->updateModelLine(line);
+    }
 }
