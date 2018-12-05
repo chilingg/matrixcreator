@@ -22,9 +22,11 @@ public:
     //Thread
     void beginUpdate();
     int getUpdateLine();
+    bool updateStatus() const;
 
+    //模型迁变Transfer
     void transferModelThread();
-    void transferModelLine(int line);
+    void transferModelLine(size_t line);
     void startTransfer();
 
 protected:

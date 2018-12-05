@@ -488,7 +488,7 @@ void MatrixView::drawSelectBox(QPainter &painter)
 
 void MatrixView::drawFPSText(QPainter &painter)
 {
-    QPoint point(10, 15);
+    QPoint point(-viewOffsetX + 10, -viewOffsetY + 15);
 
     static QPixmap fpsText(":/texts/FPS");
     static QPixmap number[10]

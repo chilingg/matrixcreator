@@ -146,6 +146,11 @@ void MatrixModel::transferModelThread()
     tempModel = tempP;
 }
 
+bool MatrixModel::updateStatus() const
+{
+    return currentStatus;
+}
+
 void MatrixModel::beginUpdate()
 {
     currentStatus = true;
@@ -159,13 +164,13 @@ int MatrixModel::getUpdateLine()
     QMutexLocker locker(&mutex);
 
     if(!currentStatus)
-        return -1;
+        return 0;
 
     if(updateLine >= WORLDSIZE)
     {
         updateLine = 0;
         currentStatus = false;
-        return -1;
+        return 0;
     }
 
     return updateLine++;
@@ -259,12 +264,9 @@ int MatrixModel::getAroundValue(int x, int y)
     return aroundValue;
 }
 
-void MatrixModel::transferModelLine(int line)
+void MatrixModel::transferModelLine(size_t line)
 {
     //qDebug() << updateLine << "UpdateLine";
-
-    if(line < 0)
-        qDebug() << "Line error!";
 
     for(int j = 0; j < WORLDSIZE; ++j)
     {
@@ -312,9 +314,9 @@ void MatrixModel::transferModelLine(int line)
 
 void MatrixModel::startTransfer()
 {
-    int line = getUpdateLine();
+    size_t line = getUpdateLine();
 
-    while (line >= 0)
+    while (updateStatus())
     {
         //qDebug() << "In thread run..." << line;
 
