@@ -3,7 +3,7 @@
 
 #include <cstddef>
 
-const int WORLDSIZE = 2046;
+const int WORLDSIZE = 4096;
 
 const int INIT_VIEW_WIDTH = 840;
 const int INIT_VIEW_HEIGHT = 720;

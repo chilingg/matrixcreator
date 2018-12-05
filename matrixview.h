@@ -38,6 +38,7 @@ public:
     void startFPSCount();
     void stopFPSCount();
     void FPSCount();
+    void FTPCount2();
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -81,10 +82,13 @@ private:
     bool redraw;
 
     //fps计算
-    int fps;
+    double fps;
     int sum;
     QFuture<void> future;
     bool fpsOnOff;
+
+    //fps计算2
+    QTime time;
 };
 
 namespace VIEW

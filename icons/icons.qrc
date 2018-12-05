@@ -15,5 +15,6 @@
         <file alias="8">texts/8.png</file>
         <file alias="9">texts/9.png</file>
         <file alias="FPS">texts/FPS.png</file>
+        <file alias="point">texts/point.png</file>
     </qresource>
 </RCC>

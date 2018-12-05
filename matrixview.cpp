@@ -38,15 +38,16 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 
     fps = 0;
     sum = 0;
-    fpsOnOff = false;
-    startFPSCount();
+    fpsOnOff = true;
+    time.start();
+    //startFPSCount();
 }
 
 MatrixView::~MatrixView()
 {
     if(fpsOnOff)
     {
-        stopFPSCount();
+        //stopFPSCount();
     }
 
     //qDebug() << "Offed fps thread.";
@@ -349,6 +350,7 @@ void MatrixView::paintEvent(QPaintEvent *)
     //qDebug() << "In PaintEvent";
 
     sum++;//sum和fps在fpsThread中修改
+    FTPCount2();
 
     if(centerOnOff)//模型与视图居中
         centerView();
@@ -495,6 +497,7 @@ void MatrixView::drawFPSText(QPainter &painter)
     QPoint point(-viewOffsetX + 10, -viewOffsetY + 15);
 
     static QPixmap fpsText(":/texts/FPS");
+    static QPixmap pointText(":/texts/point");
     static QPixmap number[10]
     {
                 QPixmap(":/texts/0"),
@@ -513,24 +516,36 @@ void MatrixView::drawFPSText(QPainter &painter)
     painter.drawPixmap(point,fpsText);
     point.setX(point.x() + fpsText.width());
 
-    if(fps >= 100)
+    size_t fpsI = static_cast<size_t>(fps);
+    if(fpsI >= 100)
     {
-        painter.drawPixmap(point, number[fps/100]);
+        painter.drawPixmap(point, number[fpsI/100]);
         point.setX(point.x() + number[0].width());
 
-        painter.drawPixmap(point, number[(fps%100)/10]);
+        painter.drawPixmap(point, number[(fpsI%100)/10]);
         point.setX(point.x() + number[0].width());
 
-        painter.drawPixmap(point, number[fps%10]);
+        painter.drawPixmap(point, number[fpsI%10]);
+        point.setX(point.x() + number[0].width());
     }else if(fps >= 10)
     {
-        painter.drawPixmap(point, number[fps/10]);
+        painter.drawPixmap(point, number[fpsI/10]);
         point.setX(point.x() + number[0].width());
 
-        painter.drawPixmap(point, number[fps%10]);
+        painter.drawPixmap(point, number[fpsI%10]);
+        point.setX(point.x() + number[0].width());
     }else
     {
-        painter.drawPixmap(point, number[fps]);
+        painter.drawPixmap(point, number[fpsI]);
+        point.setX(point.x() + number[0].width());
+    }
+
+    size_t fpsF = static_cast<size_t>((fps - fpsI)*10);
+    if(fpsF != 0)
+    {
+        painter.drawPixmap(point, pointText);
+        point.setX(point.x() + number[0].width());
+        painter.drawPixmap(point, number[fpsF]);
     }
 
     //qDebug() << "fps: " << fps;
@@ -553,5 +568,18 @@ void MatrixView::FPSCount()
             fps = sum;
             sum = 0;
         }
+    }
+}
+
+void MatrixView::FTPCount2()
+{
+    static int interval = time.elapsed();
+
+    if(sum == 7)
+    {
+        //qDebug() << "fps: " << (time.elapsed() - interval);
+        fps = 1000.0 / (time.elapsed() - interval) * 8.0;
+        interval = time.elapsed();
+        sum = 0;
     }
 }
