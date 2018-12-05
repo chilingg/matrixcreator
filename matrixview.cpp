@@ -277,6 +277,7 @@ void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
 void MatrixView::referenceLineOnOff()
 {
     referenceLine = !referenceLine;
+    redraw = !redraw;
 }
 
 void MatrixView::centerView()
@@ -356,9 +357,14 @@ void MatrixView::paintEvent(QPaintEvent *)
     //只有在需要的时候才重绘模型视图
     if(redraw)
     {
-        image = QImage(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
-        auto modalP = model->getModel();
+        static int beforeSize = 0;
+        if(beforeSize != baseUnitSize)
+        {
+            image = QImage(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
+            image.fill(VIEW::LUMINOSITY_1_17);
+        }
 
+        auto modalP = model->getModel();
         //绘制模型图像
         for(int i = 0; i < viewColumn; ++i)
         {
@@ -401,9 +407,16 @@ void MatrixView::paintEvent(QPaintEvent *)
 
 void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 {
-    for(int i = x; i < x + baseUnitSize; ++i)
+    //右下少绘制一行一列，用以形成一级参考线
+    static int interval = 0;
+    if(baseUnitSize < 8 || !referenceLine)
+        interval = 0;
+    else
+        interval = 1;
+
+    for(int i = x + interval; i < x + baseUnitSize; ++i)
     {
-        for(int j = y; j < y + baseUnitSize; ++j)
+        for(int j = y + interval; j < y + baseUnitSize; ++j)
         {
             image.setPixel(i, j, color); //以一个个像素点绘制基础单元
         }
@@ -416,26 +429,19 @@ void MatrixView::drawReferenceLine(QPainter &painter)
     if(baseUnitSize <= 1)
         return;
 
-    int level = 0;//参考线明度等级
-    const QColor lineColor[5] = {VIEW::LUMINOSITY_1_17.rgb(),
-                                 VIEW::LUMINOSITY_1_34.rgb(),
-                                 VIEW::LUMINOSITY_1_51.rgb(),
-                                 VIEW::LUMINOSITY_2_85.rgb(),
-                                 VIEW::WARNING.rgb()
+    int level = 1;//参考线明度等级
+    if(baseUnitSize < 8)
+        level = 0;
+
+    const QColor lineColor[5] = {
+        VIEW::LUMINOSITY_1_17.rgb(),
+        VIEW::LUMINOSITY_1_34.rgb(),
+        VIEW::LUMINOSITY_1_51.rgb(),
+        VIEW::LUMINOSITY_2_68.rgb(),
+        VIEW::WARNING.rgb()
                                 };
 
-    if(baseUnitSize >= 8)
-    {
-        //绘制一级参考线，相隔一个基础单元
-        painter.setPen(lineColor[level]);
-        for(int i = 1; i < viewColumn; ++i)
-            painter.drawLine(i * baseUnitSize, 0,
-                             i * baseUnitSize, viewRow * baseUnitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
-        for(int j = 1; j < viewRow; ++j)
-            painter.drawLine(0, j * baseUnitSize,
-                             viewColumn * baseUnitSize - 1, j * baseUnitSize);//绘制行
-        ++level;
-    }
+    //一级参考线在drawBaseUnit中绘制 VIEW::LUMINOSITY_1_17.rgb(),
 
     //绘制二级参考线，相隔十个基础单元
     painter.setPen(lineColor[level]);
@@ -459,7 +465,7 @@ void MatrixView::drawReferenceLine(QPainter &painter)
 
     if(WORLDSIZE > 1000)
     {
-        //绘制三级参考线，相隔百个基础单元
+        //绘制三级参考线，相隔千个基础单元
         painter.setPen(lineColor[level]);
         for(int i = 1000 - (modelOffsetX % 1000); i < viewColumn; i += 1000)
             painter.drawLine(i * baseUnitSize, 0,
