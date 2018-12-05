@@ -409,7 +409,7 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 {
     //右下少绘制一行一列，用以形成一级参考线
     static int interval = 0;
-    if(baseUnitSize < 8 || !referenceLine)
+    if(baseUnitSize < 8)
         interval = 0;
     else
         interval = 1;

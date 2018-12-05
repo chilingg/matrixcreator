@@ -226,7 +226,7 @@ void MatriController::timerEvent(QTimerEvent *)
         return;
 
     //qDebug() << "-->In the timer";
-    model->updateModelThread();
+    model->transferModelThread();
     view->update();
 }
 
@@ -310,7 +310,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_Right)
     {
-        model->updateModelThread();
+        model->transferModelThread();
         view->update();
     }
 }

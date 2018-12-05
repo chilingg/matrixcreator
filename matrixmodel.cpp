@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QtConcurrent/QtConcurrent>
 #include "matrixmodel.h"
 
 MatrixModel::MatrixModel():
@@ -8,26 +9,12 @@ MatrixModel::MatrixModel():
     clearAllModel();
     updateLine = 0;
 
-    for(size_t i = 0; i < THREADS; ++i)
-    {
-        thread[i] = new UpdateThread(this);
-    }
-
 }
 
 MatrixModel::~MatrixModel()
 {
     delete []currentModel;
     delete []tempModel;
-
-    for(size_t i = 0; i < THREADS; ++i)
-    {
-        //thread[i]->terminate();
-        thread[i]->wait();
-
-        delete thread[i];
-    }
-
 }
 
 int MatrixModel::getModelValue(int x, int y)
@@ -139,26 +126,24 @@ void MatrixModel::clearAllModel()
     }//初始化数组为0
 }
 
-void MatrixModel::updateModelThread()
+void MatrixModel::transferModelThread()
 {
     beginUpdate();
 
+    QFuture<void> future[THREADS];
     for(size_t i = 0; i < THREADS; ++i)
     {
-        thread[i]->start();
+        future[i] = QtConcurrent::run(this, &MatrixModel::startTransfer);
     }
-
-    while (status());
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        future[i].waitForFinished();
+    }
 
     //把current指向新模型，temp指向旧模型
     int(* tempP)[WORLDSIZE] = currentModel;
     currentModel = tempModel;
     tempModel = tempP;
-}
-
-bool MatrixModel::status() const
-{
-    return currentStatus;
 }
 
 void MatrixModel::beginUpdate()
@@ -170,8 +155,11 @@ int MatrixModel::getUpdateLine()
 {
     //qDebug() << "In getUpdateLine..." << updateLine;
 
-    //线程的互斥锁，当locker析构后下一个县城才能进入
+    //线程的互斥锁，当locker析构后下一个线程才能进入
     QMutexLocker locker(&mutex);
+
+    if(!currentStatus)
+        return -1;
 
     if(updateLine >= WORLDSIZE)
     {
@@ -179,9 +167,6 @@ int MatrixModel::getUpdateLine()
         currentStatus = false;
         return -1;
     }
-
-    if(!currentStatus)
-        return -1;
 
     return updateLine++;
 }
@@ -274,7 +259,7 @@ int MatrixModel::getAroundValue(int x, int y)
     return aroundValue;
 }
 
-void MatrixModel::updateModelLine(int line)
+void MatrixModel::transferModelLine(int line)
 {
     //qDebug() << updateLine << "UpdateLine";
 
@@ -325,27 +310,18 @@ void MatrixModel::updateModelLine(int line)
     //qDebug() << line << "In updating...";
 }
 
-//************************************************
-//updateThread class
-UpdateThread::UpdateThread(MatrixModel *m, QObject *parent) :
-    QThread(parent),
-    model(m)
+void MatrixModel::startTransfer()
 {
+    int line = getUpdateLine();
 
-}
-
-void UpdateThread::run()
-{
-    while (true)
+    while (line >= 0)
     {
-        int line = model->getUpdateLine();
         //qDebug() << "In thread run..." << line;
 
-        if(line < 0)
-            break;
         if(line >= WORLDSIZE)
             qDebug() << "Overflow line" << line;
 
-        model->updateModelLine(line);
+        transferModelLine(line);
+        line = getUpdateLine();
     }
 }
