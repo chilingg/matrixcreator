@@ -33,9 +33,9 @@ void MatrixModel::updateModel()
 {
     //qDebug() << "M";
 
-    for(int i = 0; i < WORLDSIZE; ++i)
+    for(size_t i = 0; i < WORLDSIZE; ++i)
     {
-        for(int j = 0; j < WORLDSIZE; ++j)
+        for(size_t j = 0; j < WORLDSIZE; ++j)
         {
             int aroundValue = getAroundValue(i, j);
             aroundValue += currentModel[i][j] ? 10 : 0;//aroundValue大于8则当前状态为生
@@ -83,9 +83,9 @@ void MatrixModel::updateModel()
     tempModel = tempP;
 }
 
-void MatrixModel::changeModelValue(int x, int y)
+void MatrixModel::changeModelValue(size_t x, size_t y)
 {
-    if(x > WORLDSIZE || y > WORLDSIZE || x < 0 || y < 0)
+    if(x > WORLDSIZE || y > WORLDSIZE)
     {
         qDebug() << "Over range!(change)" << x << y;
         return;
@@ -159,12 +159,11 @@ void MatrixModel::beginUpdate()
     currentStatus = true;
 }
 
-int MatrixModel::getUpdateLine()
+size_t MatrixModel::getUpdateLine()
 {
-    //qDebug() << "In getUpdateLine..." << updateLine;
-
-    //线程的互斥锁，当locker析构后下一个线程才能进入
     QMutexLocker locker(&lineMutex);
+
+    //qDebug() << "In getUpdateLine..." << updateLine;
 
     if(!currentStatus)
         return 0;
@@ -176,6 +175,7 @@ int MatrixModel::getUpdateLine()
         return 0;
     }
 
+    ++debug;
     return updateLine++;
 }
 
@@ -184,31 +184,31 @@ const int (*MatrixModel::getModel())[WORLDSIZE]
     return currentModel;
 }
 
-int MatrixModel::getAroundValue(int x, int y)
+int MatrixModel::getAroundValue(size_t x, size_t y)
 {
-    int around_1X = x != 0 ? x - 1 : WORLDSIZE - 1;
-    int around_1Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+    size_t around_1X = x != 0 ? x - 1 : WORLDSIZE - 1;
+    size_t around_1Y = y != 0 ? y - 1 : WORLDSIZE - 1;
 
-    int around_2X = x;
-    int around_2Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+    size_t around_2X = x;
+    size_t around_2Y = y != 0 ? y - 1 : WORLDSIZE - 1;
 
-    int around_3X = x != WORLDSIZE - 1 ? x + 1 : 0;
-    int around_3Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+    size_t around_3X = x != WORLDSIZE - 1 ? x + 1 : 0;
+    size_t around_3Y = y != 0 ? y - 1 : WORLDSIZE - 1;
 
-    int around_4X = x != 0 ? x - 1 : WORLDSIZE - 1;
-    int around_4Y = y;
+    size_t around_4X = x != 0 ? x - 1 : WORLDSIZE - 1;
+    size_t around_4Y = y;
 
-    int around_6X = x != WORLDSIZE - 1 ? x + 1 : 0;
-    int around_6Y = y;
+    size_t around_6X = x != WORLDSIZE - 1 ? x + 1 : 0;
+    size_t around_6Y = y;
 
-    int around_7X = x != 0 ? x - 1 : WORLDSIZE - 1;
-    int around_7Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+    size_t around_7X = x != 0 ? x - 1 : WORLDSIZE - 1;
+    size_t around_7Y = y != WORLDSIZE - 1 ? y + 1 : 0;
 
-    int around_8X = x;
-    int around_8Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+    size_t around_8X = x;
+    size_t around_8Y = y != WORLDSIZE - 1 ? y + 1 : 0;
 
-    int around_9X = x != WORLDSIZE - 1 ? x + 1 : 0;
-    int around_9Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+    size_t around_9X = x != WORLDSIZE - 1 ? x + 1 : 0;
+    size_t around_9Y = y != WORLDSIZE - 1 ? y + 1 : 0;
 
     int aroundValue = currentModel[around_1X][around_1Y]
             + currentModel[around_2X][around_2Y]
@@ -223,44 +223,44 @@ int MatrixModel::getAroundValue(int x, int y)
     {
         qDebug() << "aroundValue overflow!" << x << y;
 
-        if(around_1X >= WORLDSIZE || around_1X < 0)
+        if(around_1X >= WORLDSIZE)
             qDebug() << around_1X << "around_1X";
-        if(around_1Y > WORLDSIZE || around_1Y < 0)
+        if(around_1Y > WORLDSIZE)
             qDebug() << around_1Y << "around_1Y";
 
-        if(around_2X >= WORLDSIZE || around_2X < 0)
+        if(around_2X >= WORLDSIZE)
             qDebug() << around_2X << "around_2X";
-        if(around_2Y > WORLDSIZE || around_2Y < 0)
+        if(around_2Y > WORLDSIZE)
             qDebug() << around_2Y << "around_2Y";
 
-        if(around_3X >= WORLDSIZE || around_3X < 0)
+        if(around_3X >= WORLDSIZE)
             qDebug() << around_3X << "around_3X";
-        if(around_3Y >= WORLDSIZE || around_3Y < 0)
+        if(around_3Y >= WORLDSIZE)
             qDebug() << around_3Y << "around_3Y";
 
-        if(around_4X >= WORLDSIZE || around_4X < 0)
+        if(around_4X >= WORLDSIZE)
             qDebug() << around_4X << "around_4X";
-        if(around_4Y >= WORLDSIZE || around_4Y < 0)
+        if(around_4Y >= WORLDSIZE)
             qDebug() << around_4Y << "around_4Y";
 
-        if(around_6X >= WORLDSIZE || around_6X < 0)
+        if(around_6X >= WORLDSIZE)
             qDebug() << around_6X << "around_6X";
-        if(around_6Y >= WORLDSIZE || around_6Y < 0)
+        if(around_6Y >= WORLDSIZE)
             qDebug() << around_6Y << "around_6Y";
 
-        if(around_7X >= WORLDSIZE || around_7X < 0)
+        if(around_7X >= WORLDSIZE)
             qDebug() << around_7X << "around_7X";
-        if(around_7Y >= WORLDSIZE || around_7Y < 0)
+        if(around_7Y >= WORLDSIZE)
             qDebug() << around_7Y << "around_7Y";
 
-        if(around_8X >= WORLDSIZE || around_8X < 0)
+        if(around_8X >= WORLDSIZE)
             qDebug() << around_8X << "around_8X";
-        if(around_8Y >= WORLDSIZE || around_8Y < 0)
+        if(around_8Y >= WORLDSIZE)
             qDebug() << around_8Y << "around_8Y";
 
-        if(around_9X > WORLDSIZE || around_9X < 0)
+        if(around_9X > WORLDSIZE)
             qDebug() << around_9X << "around_9X";
-        if(around_9Y > WORLDSIZE || around_9Y < 0)
+        if(around_9Y > WORLDSIZE)
             qDebug() << around_9Y << "around_9Y";
     }
 
@@ -269,11 +269,10 @@ int MatrixModel::getAroundValue(int x, int y)
 
 void MatrixModel::changLineAroundValue(size_t line)
 {
-    ++debug;
     //QMutexLocker locker(&changeMutex);
     //qDebug() << " 1";
 
-    for(int y = 0; y < WORLDSIZE; ++y)
+    for(size_t y = 0; y < WORLDSIZE; ++y)
     {
         if(currentModel[line][y] == 0)
             continue;
@@ -281,29 +280,29 @@ void MatrixModel::changLineAroundValue(size_t line)
         if(line >= WORLDSIZE || y > WORLDSIZE)
             qDebug() << line << y << "changeAroundValue error";
 
-        int around_1X = line != 0 ? line - 1 : WORLDSIZE - 1;
-        int around_1Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+        size_t around_1X = line != 0 ? line - 1 : WORLDSIZE - 1;
+        size_t around_1Y = y != 0 ? y - 1 : WORLDSIZE - 1;
 
-        int around_2X = line;
-        int around_2Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+        size_t around_2X = line;
+        size_t around_2Y = y != 0 ? y - 1 : WORLDSIZE - 1;
 
-        int around_3X = line != WORLDSIZE - 1 ? line + 1 : 0;
-        int around_3Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+        size_t around_3X = line != WORLDSIZE - 1 ? line + 1 : 0;
+        size_t around_3Y = y != 0 ? y - 1 : WORLDSIZE - 1;
 
-        int around_4X = line != 0 ? line - 1 : WORLDSIZE - 1;
-        int around_4Y = y;
+        size_t around_4X = line != 0 ? line - 1 : WORLDSIZE - 1;
+        size_t around_4Y = y;
 
-        int around_6X = line != WORLDSIZE - 1 ? line + 1 : 0;
-        int around_6Y = y;
+        size_t around_6X = line != WORLDSIZE - 1 ? line + 1 : 0;
+        size_t around_6Y = y;
 
-        int around_7X = line != 0 ? line - 1 : WORLDSIZE - 1;
-        int around_7Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+        size_t around_7X = line != 0 ? line - 1 : WORLDSIZE - 1;
+        size_t around_7Y = y != WORLDSIZE - 1 ? y + 1 : 0;
 
-        int around_8X = line;
-        int around_8Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+        size_t around_8X = line;
+        size_t around_8Y = y != WORLDSIZE - 1 ? y + 1 : 0;
 
-        int around_9X = line != WORLDSIZE - 1 ? line + 1 : 0;
-        int around_9Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+        size_t around_9X = line != WORLDSIZE - 1 ? line + 1 : 0;
+        size_t around_9Y = y != WORLDSIZE - 1 ? y + 1 : 0;
 
         changeMutex.lock();
         int t = tempModel[line][y];
@@ -326,10 +325,9 @@ void MatrixModel::changLineAroundValue(size_t line)
 
 void MatrixModel::transferModelLine(size_t line)
 {
-    ++debug;
     //qDebug() << updateLine << "UpdateLine";
 
-    for(int j = 0; j < WORLDSIZE; ++j)
+    for(size_t j = 0; j < WORLDSIZE; ++j)
     {
         int aroundValue = getAroundValue(line, j);
         aroundValue += currentModel[line][j] ? 10 : 0;//aroundValue大于8则当前状态为生
@@ -421,8 +419,6 @@ void MatrixModel::calculusModelThread()
 
 void MatrixModel::calculusModelLine(size_t line)
 {
-    ++debug;
-
     QMutex tempMutex;
     QMutexLocker locker(&tempMutex);
 
@@ -476,7 +472,7 @@ void MatrixModel::startCalculus1()
     size_t line = getUpdateLine();
     //qDebug() << "In startCalculus1..." << line;
 
-    while (updateStatus())
+    while (updateStatus() || line != 0)
     {
         changLineAroundValue(line);
         line = getUpdateLine();
@@ -490,9 +486,46 @@ void MatrixModel::startCalculus2()
     size_t line = getUpdateLine();
     //qDebug() << "In startCalculus2..." << line;
 
-    while (updateStatus())
+    while (updateStatus() || line != 0)
     {
         calculusModelLine(line);
+        line = getUpdateLine();
+    }
+}
+
+void MatrixModel::testModelThread()
+{
+    beginUpdate();
+
+    QFuture<void> future[THREADS];
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        future[i] = QtConcurrent::run(this, &MatrixModel::startTest);
+    }
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        future[i].waitForFinished();
+    }
+    if(debug != WORLDSIZE)
+        qDebug() << "Thread runs:" << WORLDSIZE - debug;
+    debug = 0;
+}
+
+void MatrixModel::testModelLine(size_t line)
+{
+    for(size_t j = 0; j < WORLDSIZE; ++j)
+    {
+        changeModelValue(line, j);
+    }
+}
+
+void MatrixModel::startTest()
+{
+    size_t line = getUpdateLine();
+
+    while (updateStatus() || line != 0)
+    {
+        testModelLine(line);
         line = getUpdateLine();
     }
 }

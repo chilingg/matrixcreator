@@ -14,14 +14,14 @@ public:
     ~MatrixModel();
     int getModelValue(int x, int y); //依据坐标返回单个数据
     void updateModel(); //更新数据
-    void changeModelValue(int x, int y); //修改模型的值
+    void changeModelValue(size_t x, size_t y); //修改模型的值
     void clearModel(int x, int y, int widht, int height);
     void clearAllModel();
     const int (*getModel())[WORLDSIZE];
 
     //Thread
     void beginUpdate();
-    int getUpdateLine();
+    size_t getUpdateLine();
     bool updateStatus() const;
 
     //模型迁变Transfer
@@ -36,8 +36,13 @@ public:
     void startCalculus1();
     void startCalculus2();
 
+    //模型测试
+    void testModelThread();
+    void testModelLine(size_t line);
+    void startTest();
+
 protected:
-    int getAroundValue(int x, int y);
+    int getAroundValue(size_t x, size_t y);
 
 private:
     int(* currentModel)[WORLDSIZE];
@@ -45,7 +50,7 @@ private:
 
     //Thread
     bool currentStatus;
-    int updateLine;
+    size_t updateLine;
     QMutex lineMutex;
     QMutex changeMutex;
     int debug = 0;
