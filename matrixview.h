@@ -35,7 +35,8 @@ public:
     void centerView();
     void notRedraw();//因历史遗留原因而增加的函数，若重写则在更改视图时直接把redraw改为true
 
-    void FTPCount();
+    void FPSCount();
+    void FPSDisplayOnOff();
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -80,7 +81,7 @@ private:
 
     //fps计算
     double fps;
-    int sum;
+    int FrameSum;
     bool fpsOnOff;
 
     //fps计算2

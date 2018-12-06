@@ -37,7 +37,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     redraw = true;
 
     fps = 0;
-    sum = 0;
+    FrameSum = 0;
     fpsOnOff = true;
     time.start();
 }
@@ -385,8 +385,8 @@ void MatrixView::paintEvent(QPaintEvent *)
 
     if(fpsOnOff)
     {
-        sum++;//sum和fps在fpsThread中修改
-        FTPCount();
+        FrameSum++;//sum和fps在fpsThread中修改
+        FPSCount();
         drawFPSText(painter);
     }
 
@@ -534,15 +534,21 @@ void MatrixView::drawFPSText(QPainter &painter)
     //qDebug() << "fps: " << fps;
 }
 
-void MatrixView::FTPCount()
+void MatrixView::FPSCount()
 {
     static int interval = time.elapsed();
 
-    if(sum == 8)
+    if(FrameSum == 8)
     {
         //qDebug() << "fps: " << (time.elapsed() - interval);
         fps = 1000.0 / (time.elapsed() - interval) * 8.0;
         interval = time.elapsed();
-        sum = 0;
+        FrameSum = 0;
     }
+}
+
+void MatrixView::FPSDisplayOnOff()
+{
+    fpsOnOff = !fpsOnOff;
+    FrameSum = 0;
 }

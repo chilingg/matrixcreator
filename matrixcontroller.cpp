@@ -232,10 +232,18 @@ void MatriController::timerEvent(QTimerEvent *)
 
 void MatriController::keyPressEvent(QKeyEvent *event)
 {
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Semicolon)//ctrl+; 参考线开关
+    //qDebug() << event->key();
+
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Apostrophe)//ctrl+; 参考线开关
     {
         view->referenceLineOnOff();
         view->notRedraw();
+        view->update();
+    }
+
+    if(event->key() == Qt::Key_Tab)//Tab 帧率显示开关
+    {
+        view->FPSDisplayOnOff();
         view->update();
     }
 
@@ -302,13 +310,13 @@ void MatriController::keyPressEvent(QKeyEvent *event)
         setCursor(circleCursor);
     }
 
-    if(event->key() == Qt::Key_F4)
+    if(event->key() == Qt::Key_F4)//居中
     {
         view->centerView();
         view->update();
     }
 
-    if(event->key() == Qt::Key_Right)
+    if(event->key() == Qt::Key_Right)//单步前进
     {
         model->transferModelThread();
         view->update();
