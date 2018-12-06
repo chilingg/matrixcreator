@@ -161,7 +161,7 @@ int MatrixModel::getUpdateLine()
     //qDebug() << "In getUpdateLine..." << updateLine;
 
     //线程的互斥锁，当locker析构后下一个线程才能进入
-    QMutexLocker locker(&mutex);
+    QMutexLocker locker(&lineMutex);
 
     if(!currentStatus)
         return 0;
@@ -264,6 +264,58 @@ int MatrixModel::getAroundValue(int x, int y)
     return aroundValue;
 }
 
+void MatrixModel::changLineAroundValue(size_t line)
+{
+    //QMutexLocker locker(&changeMutex);
+    //qDebug() << " 1";
+
+    for(int y = 0; y < WORLDSIZE; ++y)
+    {
+        if(currentModel[line][y] == 0)
+            continue;
+
+        if(line >= WORLDSIZE || y > WORLDSIZE)
+            qDebug() << line << y << "changeAroundValue error";
+
+        int around_1X = line != 0 ? line - 1 : WORLDSIZE - 1;
+        int around_1Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+
+        int around_2X = line;
+        int around_2Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+
+        int around_3X = line != WORLDSIZE - 1 ? line + 1 : 0;
+        int around_3Y = y != 0 ? y - 1 : WORLDSIZE - 1;
+
+        int around_4X = line != 0 ? line - 1 : WORLDSIZE - 1;
+        int around_4Y = y;
+
+        int around_6X = line != WORLDSIZE - 1 ? line + 1 : 0;
+        int around_6Y = y;
+
+        int around_7X = line != 0 ? line - 1 : WORLDSIZE - 1;
+        int around_7Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+
+        int around_8X = line;
+        int around_8Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+
+        int around_9X = line != WORLDSIZE - 1 ? line + 1 : 0;
+        int around_9Y = y != WORLDSIZE - 1 ? y + 1 : 0;
+
+        changeMutex.lock();
+        tempModel[around_1X][around_1Y] += 1;
+        tempModel[around_2X][around_2Y] += 1;
+        tempModel[around_3X][around_3Y] += 1;
+        tempModel[around_4X][around_4Y] += 1;
+        tempModel[line][y] += 10; //值大于等于10则表示对应current有值
+        tempModel[around_6X][around_6Y] += 1;
+        tempModel[around_7X][around_7Y] += 1;
+        tempModel[around_8X][around_8Y] += 1;
+        tempModel[around_9X][around_9Y] += 1;
+        changeMutex.unlock();
+    }
+    //qDebug() << "1 ";
+}
+
 void MatrixModel::transferModelLine(size_t line)
 {
     //qDebug() << updateLine << "UpdateLine";
@@ -324,6 +376,104 @@ void MatrixModel::startTransfer()
             qDebug() << "Overflow line" << line;
 
         transferModelLine(line);
+        line = getUpdateLine();
+    }
+}
+
+void MatrixModel::calculusModelThread()
+{
+    beginUpdate();
+    QFuture<void> future[THREADS];
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        future[i] = QtConcurrent::run(this, &MatrixModel::startCalculus1);
+    }
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        future[i].waitForFinished();
+    }
+
+    beginUpdate();
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        future[i] = QtConcurrent::run(this, &MatrixModel::startCalculus2);
+    }
+    for(size_t i = 0; i < THREADS; ++i)
+    {
+        future[i].waitForFinished();
+    }
+}
+
+void MatrixModel::calculusModelLine(size_t line)
+{
+    QMutex tempMutex;
+    QMutexLocker locker(&tempMutex);
+
+    for(int y = 0; y < WORLDSIZE; ++y)
+    {
+        //if(tempModel[line][y] == 0 && currentModel[line][y] == 0)
+            //continue;
+
+        switch (tempModel[line][y])
+        {
+        case 0:
+        case 1:
+        case 2:
+            break;
+        case 3:
+            currentModel[line][y] = 1;
+            break;
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            break;
+        case 10:
+        case 11:
+            currentModel[line][y] = 0;
+            break;
+        case 12:
+        case 13:
+            break;
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 18:
+            currentModel[line][y] = 0;
+            break;
+
+        default:
+            qDebug() << "Value Error!" << line << y;
+            currentModel[line][y] = 2;
+            break;
+        }
+
+        tempModel[line][y] = 0;
+    }
+}
+
+void MatrixModel::startCalculus1()
+{
+    size_t line = getUpdateLine();
+    //qDebug() << "In startCalculus1..." << line;
+
+    while (updateStatus())
+    {
+        changLineAroundValue(line);
+        line = getUpdateLine();
+    }
+}
+
+void MatrixModel::startCalculus2()
+{
+    size_t line = getUpdateLine();
+    //qDebug() << "In startCalculus2..." << line;
+
+    while (updateStatus())
+    {
+        calculusModelLine(line);
         line = getUpdateLine();
     }
 }

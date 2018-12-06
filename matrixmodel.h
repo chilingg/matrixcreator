@@ -29,6 +29,13 @@ public:
     void transferModelLine(size_t line);
     void startTransfer();
 
+    //模型演变Calculus
+    void calculusModelThread();
+    void changLineAroundValue(size_t line);
+    void calculusModelLine(size_t line);
+    void startCalculus1();
+    void startCalculus2();
+
 protected:
     int getAroundValue(int x, int y);
 
@@ -39,7 +46,8 @@ private:
     //Thread
     bool currentStatus;
     int updateLine;
-    QMutex mutex;
+    QMutex lineMutex;
+    QMutex changeMutex;
 };
 
 #endif // MATRIXMODEL_H
