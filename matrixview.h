@@ -41,7 +41,7 @@ public:
 protected:
     void paintEvent(QPaintEvent *);
     void updateViewData();
-    void drawBaseUnit(int x, int y, QRgb color, QImage &image);//按baseUnitSize绘制基础单元
+    void drawBaseUnit(int x, int y, QRgb color);//按baseUnitSize绘制基础单元
     void drawReferenceLine(QPainter &painter);//绘制参考线
     void drawSelectBox(QPainter &painter);
     void drawFPSText(QPainter &painter);
@@ -78,6 +78,8 @@ private:
 
     QImage image;
     bool redraw;
+    unsigned char *ppix;
+    int imageWidth;
 
     //fps计算
     double fps;

@@ -34,6 +34,8 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
     centerOnOff = true;
 
     image = QImage();
+    ppix = image.bits();
+    imageWidth = image.width();
     redraw = true;
 
     fps = 0;
@@ -347,6 +349,8 @@ void MatrixView::paintEvent(QPaintEvent *)
         {
             image = QImage(viewColumn * baseUnitSize, viewRow * baseUnitSize, QImage::Format_RGB32);
             image.fill(VIEW::LUMINOSITY_1_17);
+            ppix = image.bits();
+            imageWidth = image.width();
         }
 
         auto modalP = model->getModel();
@@ -367,7 +371,7 @@ void MatrixView::paintEvent(QPaintEvent *)
                     color = qRgb(255, 0, 0);
 
                 //qDebug() << i << j << value << "-->This is value()";
-                drawBaseUnit(i * baseUnitSize, j * baseUnitSize, color, image);
+                drawBaseUnit(i * baseUnitSize * 4, j * baseUnitSize * 4, color);
             }
         }
 
@@ -394,20 +398,24 @@ void MatrixView::paintEvent(QPaintEvent *)
     //qDebug() << selectedUnitRect << "Selected unit rect";
 }
 
-void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
+void MatrixView::drawBaseUnit(int x, int y, QRgb color)
 {
     //右下少绘制一行一列，用以形成一级参考线
     static int interval = 0;
     if(baseUnitSize < 8)
         interval = 0;
     else
-        interval = 1;
+        interval = 4;
 
-    for(int i = x + interval; i < x + baseUnitSize; ++i)
+    unsigned char luminosity = color & 0Xff;
+    for(int i = x + interval; i < x + (baseUnitSize*4); i += 4)
     {
-        for(int j = y + interval; j < y + baseUnitSize; ++j)
+        for(int j = y + interval; j < y + (baseUnitSize*4); j += 4)
         {
-            image.setPixel(i, j, color); //以一个个像素点绘制基础单元
+            //image.setPixel(i, j, color); //以一个个像素点绘制基础单元
+            *(ppix + i + j*imageWidth) = luminosity; //B
+            *(ppix + i + j*imageWidth +1) = luminosity; //G
+            *(ppix + i + j*imageWidth +2) = luminosity; //R
         }
     }
 }
