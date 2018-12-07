@@ -175,7 +175,6 @@ size_t MatrixModel::getUpdateLine()
         return 0;
     }
 
-    ++debug;
     return updateLine++;
 }
 
@@ -269,6 +268,10 @@ int MatrixModel::getAroundValue(size_t x, size_t y)
 
 void MatrixModel::changLineAroundValue(size_t line)
 {
+    changeMutex.lock();
+    ++debug;
+    changeMutex.unlock();
+
     //QMutexLocker locker(&changeMutex);
     //qDebug() << " 1";
 
@@ -413,14 +416,19 @@ void MatrixModel::calculusModelThread()
         future[i].waitForFinished();
     }
     if(debug != WORLDSIZE)
+    {
         qDebug() << "Thread2 runs:" << WORLDSIZE - debug;
+        qDebug() << WORLDSIZE * (WORLDSIZE+1) / 2 - debugValue;
+    }
     debug = 0;
+    debugValue = 0;
 }
 
 void MatrixModel::calculusModelLine(size_t line)
 {
-    QMutex tempMutex;
-    QMutexLocker locker(&tempMutex);
+    QMutexLocker locker(&changeMutex);
+    ++debug;
+    debugValue += line;
 
     for(int y = 0; y < WORLDSIZE; ++y)
     {

@@ -63,10 +63,10 @@ bool MatrixView::isInView(int clickedX, int clickedY)
         }
     }
 
-    qDebug() << "Point over!";
-    qDebug() << viewColumn << viewRow << baseUnitSize << "C&R&B";
-    qDebug() << clickedX / baseUnitSize << clickedX << "-->pos().x";
-    qDebug() << clickedY / baseUnitSize << clickedY << "-->pos().y";
+    //qDebug() << "Point over!";
+    //qDebug() << viewColumn << viewRow << baseUnitSize << "C&R&B";
+    //qDebug() << clickedX / baseUnitSize << clickedX << "-->pos().x";
+    //qDebug() << clickedY / baseUnitSize << clickedY << "-->pos().y";
     return false;
 }
 
@@ -83,10 +83,10 @@ bool MatrixView::isInView(QPoint pos)
         }
     }
 
-    qDebug() << "Point over!";
-    qDebug() << viewColumn << viewRow << baseUnitSize << "C&R&B";
-    qDebug() << pos.x() / baseUnitSize << pos.x() << "-->pos().x";
-    qDebug() << pos.y() / baseUnitSize << pos.y() << "-->pos().y";
+    //qDebug() << "Point over!";
+    //qDebug() << viewColumn << viewRow << baseUnitSize << "C&R&B";
+    //qDebug() << pos.x() / baseUnitSize << pos.x() << "-->pos().x";
+    //qDebug() << pos.y() / baseUnitSize << pos.y() << "-->pos().y";
     return false;
 }
 

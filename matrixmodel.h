@@ -53,7 +53,9 @@ private:
     size_t updateLine;
     QMutex lineMutex;
     QMutex changeMutex;
+
     int debug = 0;
+    int debugValue = 0;
 };
 
 #endif // MATRIXMODEL_H
