@@ -407,15 +407,18 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color)
     else
         interval = 4;
 
-    unsigned char luminosity = color & 0Xff;
+    unsigned char b = color & 0Xff;
+    unsigned char g = color>>8 & 0Xff;
+    unsigned char r = color>>16 & 0Xff;
+
     for(int i = x + interval; i < x + (baseUnitSize*4); i += 4)
     {
         for(int j = y + interval; j < y + (baseUnitSize*4); j += 4)
         {
             //image.setPixel(i, j, color); //以一个个像素点绘制基础单元
-            *(ppix + i + j*imageWidth) = luminosity; //B
-            *(ppix + i + j*imageWidth +1) = luminosity; //G
-            *(ppix + i + j*imageWidth +2) = luminosity; //R
+            *(ppix + i + j*imageWidth) = b; //B
+            *(ppix + i + j*imageWidth +1) = g; //G
+            *(ppix + i + j*imageWidth +2) = r; //R
         }
     }
 }

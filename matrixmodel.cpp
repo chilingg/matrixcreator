@@ -139,9 +139,9 @@ void MatrixModel::transferModelThread()
     {
         future[i].waitForFinished();
     }
-    if(debug != WORLDSIZE)
-        qDebug() << "Thread runs:" << WORLDSIZE - debug;
-    debug = 0;
+    //if(debug != WORLDSIZE)
+        //qDebug() << "Thread runs:" << WORLDSIZE - debug;
+    //debug = 0;
 
     //把current指向新模型，temp指向旧模型
     int(* tempP)[WORLDSIZE] = currentModel;
@@ -319,6 +319,7 @@ void MatrixModel::changLineAroundValue(size_t line)
         tempModel[around_8X][around_8Y] += 1;
         tempModel[around_9X][around_9Y] += 1;
 
+        //扣除未计算到的位置
         if(tempModel[line][y] > 18)
             qDebug() << "Unclear!" << line << y << tempModel[line][y] << t;
         changeMutex.unlock();
@@ -514,9 +515,9 @@ void MatrixModel::testModelThread()
     {
         future[i].waitForFinished();
     }
-    if(debug != WORLDSIZE)
-        qDebug() << "Thread runs:" << WORLDSIZE - debug;
-    debug = 0;
+    //if(debug != WORLDSIZE)
+        //qDebug() << "Thread runs:" << WORLDSIZE - debug;
+    //debug = 0;
 }
 
 void MatrixModel::testModelLine(size_t line)
