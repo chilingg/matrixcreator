@@ -2,6 +2,7 @@
     <qresource prefix="/cursor">
         <file alias="circleSelect">circle.png</file>
         <file alias="pointSelect">point.png</file>
+        <file alias="zoomView">zoom.png</file>
     </qresource>
     <qresource prefix="/texts">
         <file alias="0">texts/0.png</file>

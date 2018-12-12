@@ -11,10 +11,11 @@
 #include "matrixmodel.h"
 #include "matrixview.h"
 
-enum SelectTool
+enum CursorTool
 {
     POINT,
-    CIRCLE
+    CIRCLE,
+    TRANSLATE
 };
 
 class MatriController : public QMainWindow
@@ -42,9 +43,12 @@ private:
     QPoint moveViewPos;
     QRect selectRect;
     QPoint clickedPos;
-    SelectTool selectTool;
+
+    CursorTool cursorTool;
+    CursorTool lastCursorTool;
     QCursor circleCursor;
     QCursor pointCursor;
+    QCursor translateCursor;
 };
 
 #endif // MATRIXCONTROLLER_H
