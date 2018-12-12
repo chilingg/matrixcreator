@@ -549,6 +549,7 @@ void MatrixView::FPSCount()
 {
     static int interval = time.elapsed();
 
+    //每N帧计算一次帧率
     if(FrameSum == 8)
     {
         //qDebug() << "fps: " << (time.elapsed() - interval);

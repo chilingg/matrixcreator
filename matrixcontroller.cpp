@@ -128,6 +128,7 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
     {
         QPoint point = event->pos();
 
+        //从视图外移动进视图中
         if(moveViewPos.isNull())
         {
             moveViewPos = event->pos();
@@ -156,40 +157,42 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
     {
         if(cursorTool == CIRCLE)
         {
+            //从视图外移动进视图中
             if(selectRect.isEmpty())
             {
-                selectRect = view->getUnitRect(view->getModelPoint(event->pos()));//单击选择
+                selectRect = view->getUnitRect(view->getModelPoint(event->pos()));
                 view->selectedUnits(selectRect);
                 view->update();
             }
 
-            QRect beforePos = selectRect;
-            QRect afterPos = view->getUnitRect(view->getModelPoint(event->pos()));
+            QRect beforePos = selectRect;//起始点
+            QRect afterPos = view->getUnitRect(view->getModelPoint(event->pos()));//终点
 
-            if(selectRect.x() < afterPos.x())
+            if(selectRect.x() < afterPos.x())//向右框选
             {
                 if(selectRect.y() < afterPos.y())
-                    beforePos.setBottomRight(afterPos.bottomRight());//框选
+                    beforePos.setBottomRight(afterPos.bottomRight());//向下框选
                 else
-                    beforePos.setTopRight(afterPos.topRight());
+                    beforePos.setTopRight(afterPos.topRight());//向上框选
             }
-            else
+            else//向左框选
             {
                 if(selectRect.y() < afterPos.y())
-                    beforePos.setBottomLeft(afterPos.bottomLeft());
+                    beforePos.setBottomLeft(afterPos.bottomLeft());//向下框选
                 else
-                    beforePos.setTopLeft(afterPos.topLeft());
+                    beforePos.setTopLeft(afterPos.topLeft());//向上框选
             }
 
             view->selectedUnits(beforePos);
-            view->notRedraw();
+            view->notRedraw();//不要重绘模型图像
             view->update();
         }
         else if(cursorTool == POINT)
         {
             QPoint pos = view->getModelPoint(event->pos());
 
-            if(clickedPos.isNull())//??
+            //从视图外移动进视图中
+            if(clickedPos.isNull())
                 clickedPos = pos;
 
             if(clickedPos != pos)
@@ -414,6 +417,7 @@ void MatriController::keyReleaseEvent(QKeyEvent *event)
     if(start)
         return;
 
+    //松开ctrl后恢复原本鼠标工具
     if(event->key() == Qt::Key_Control)
     {
         CursorTool temp = lastCursorTool;

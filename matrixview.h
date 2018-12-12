@@ -16,15 +16,16 @@ public:
     bool isInView(int clickedX, int clickedY);//返回view坐标中对应的model坐标
     bool isInView(QPoint pos);
 
-    QPoint getModelPoint(int clickedX, int clickedY);
+    QPoint getModelPoint(int clickedX, int clickedY);//点击坐标转换模型坐标
     QPoint getModelPoint(QPoint clickedPos);
-    QPoint getUnitCentralPoint(int modelX, int modelY) const;
+    QPoint getUnitCentralPoint(int modelX, int modelY) const;//模型坐标转换为view中单元的中心点窗口坐标
     QPoint getUnitCentralPoint(QPoint modelPoint) const;
-    QPoint getUnitPoint(QPoint modelPoint) const;//暂弃
-    QRect getUnitRect(QPoint modelPoint) const;
+    QPoint getUnitPoint(QPoint modelPoint) const;//暂弃 模型坐标转换为view中单元的左上角坐标
+    QRect getUnitRect(QPoint modelPoint) const;//获取模型在view中的坐标集
 
-    QRect getSelectedModelRect() const;
-    QRect getSelectedUnitRect() const;
+    QRect getSelectedModelRect() const;//获取选中的模型坐标集
+    QRect getSelectedUnitRect() const;//获取选中的view单元坐标集
+
     QPoint getViewOffsetPoint() const;
     int getBaseUnitSize() const;
 

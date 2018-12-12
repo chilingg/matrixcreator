@@ -8,7 +8,6 @@ MatrixModel::MatrixModel():
 {
     clearAllModel();
     updateLine = 0;
-
 }
 
 MatrixModel::~MatrixModel()
@@ -137,7 +136,7 @@ void MatrixModel::transferModelThread()
     }
     for(size_t i = 0; i < THREADS; ++i)
     {
-        future[i].waitForFinished();
+        future[i].waitForFinished();//等待所有线程结束
     }
     //if(debug != WORLDSIZE)
         //qDebug() << "Thread runs:" << WORLDSIZE - debug;
@@ -161,6 +160,7 @@ void MatrixModel::beginUpdate()
 
 size_t MatrixModel::getUpdateLine()
 {
+    //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
     QMutexLocker locker(&lineMutex);
 
     //qDebug() << "In getUpdateLine..." << updateLine;
@@ -178,7 +178,7 @@ size_t MatrixModel::getUpdateLine()
     return updateLine++;
 }
 
-const int (*MatrixModel::getModel())[WORLDSIZE]
+auto MatrixModel::getModel() -> const int(*)[WORLDSIZE]
 {
     return currentModel;
 }
@@ -319,7 +319,6 @@ void MatrixModel::changLineAroundValue(size_t line)
         tempModel[around_8X][around_8Y] += 1;
         tempModel[around_9X][around_9Y] += 1;
 
-        //扣除未计算到的位置
         if(tempModel[line][y] > 18)
             qDebug() << "Unclear!" << line << y << tempModel[line][y] << t;
         changeMutex.unlock();
@@ -481,7 +480,7 @@ void MatrixModel::startCalculus1()
     size_t line = getUpdateLine();
     //qDebug() << "In startCalculus1..." << line;
 
-    while (updateStatus() || line != 0)
+    while (updateStatus() || line != 0) //避免获取line成功后，更新被其它线程结T束
     {
         changLineAroundValue(line);
         line = getUpdateLine();
@@ -495,7 +494,7 @@ void MatrixModel::startCalculus2()
     size_t line = getUpdateLine();
     //qDebug() << "In startCalculus2..." << line;
 
-    while (updateStatus() || line != 0)
+    while (updateStatus() || line != 0) //避免获取line成功后，更新被其它线程结T束
     {
         calculusModelLine(line);
         line = getUpdateLine();
