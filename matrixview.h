@@ -39,10 +39,13 @@ public:
     void FPSCount();
     void FPSDisplayOnOff();
 
+    void takePicture();//获取选区或屏幕照片
+
 protected:
     void paintEvent(QPaintEvent *);
     void updateViewData();
     void drawBaseUnit(int x, int y, QRgb color);//按baseUnitSize绘制基础单元
+    void drawBaseUnit(int x, int y, QRgb color, QImage &image);
     void drawReferenceLine(QPainter &painter);//绘制参考线
     void drawSelectBox(QPainter &painter);
     void drawFPSText(QPainter &painter);

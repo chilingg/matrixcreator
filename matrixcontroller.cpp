@@ -325,6 +325,12 @@ void MatriController::keyPressEvent(QKeyEvent *event)
         start = !start;
     }
 
+    if(event->key() == Qt::Key_F12)//拍照
+    {
+        view->takePicture();
+        return;
+    }
+
     //键盘事件发生时，先处理选择对象
     if (selectRect.isValid())
     {
@@ -465,11 +471,15 @@ void MatriController::wheelEvent(QWheelEvent *event)
         view->zoomView(clickedX, clickedY, true);//缩小
     else
         view->zoomView(clickedX, clickedY, false);//放大
-    
-    //获取鼠标所处单元的中心点坐标和view与全局坐标的偏差值，并把光标移到该坐标
-    QPoint unitPoint = view->getUnitCentralPoint(view->getModelPoint(clickedX, clickedY));
-    QPoint offset = event->globalPos() - event->pos() + view->getViewOffsetPoint();
-    cursor().setPos(unitPoint + offset);
-    //qDebug() << event->globalPos() << event->pos() << view->getviewOffsetPoint() << offset << "G-P-V";
-    //qDebug() << cursor().pos() << "After";
+
+    //缩放后鼠标位置处于view中
+    if(view->isInView(event->pos()))
+    {
+        //获取鼠标所处单元的中心点坐标和view与全局坐标的偏差值，并把光标移到该坐标
+        QPoint unitPoint = view->getUnitCentralPoint(view->getModelPoint(clickedX, clickedY));
+        QPoint offset = event->globalPos() - event->pos() + view->getViewOffsetPoint();
+        cursor().setPos(unitPoint + offset);
+        //qDebug() << event->globalPos() << event->pos() << view->getviewOffsetPoint() << offset << "G-P-V";
+        //qDebug() << cursor().pos() << "After";
+    }
 }

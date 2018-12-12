@@ -132,7 +132,7 @@ QPoint MatrixView::getUnitCentralPoint(QPoint modelPoint) const
     int y = modelPoint.y() - modelOffsetY;
 
     if(x < 0 || x > viewColumn)
-        qDebug() << "Unit not in view!" << x << y;
+        qDebug() << "Unit not in view!getUnitCentralPoint" << x << y;
     if(y < 0 || y > viewRow)
         qDebug() << "Unit not in view!" << x << y;
 
@@ -148,7 +148,7 @@ QPoint MatrixView::getUnitPoint(QPoint modelPoint) const
     int y = modelPoint.y() - modelOffsetY;
 
     if(x < 0 || x > viewColumn)
-        qDebug() << "Unit not in view!" << x << y;
+        qDebug() << "Unit not in view!getUnitPoint" << x << y;
     if(y < 0 || y > viewRow)
         qDebug() << "Unit not in view!" << x << y;
 
@@ -169,7 +169,7 @@ QRect MatrixView::getUnitRect(QPoint modelPoint) const
     int y = modelPoint.y() - modelOffsetY;
 
     if(x < 0 || x > viewColumn)
-        qDebug() << "Unit not in view!" << x << y;
+        qDebug() << "Unit not in view!getUnitCentralPoint" << x << y;
     if(y < 0 || y > viewRow)
         qDebug() << "Unit not in view!" << x << y;
 
@@ -423,6 +423,33 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color)
     }
 }
 
+void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
+{
+    unsigned char *ppix = image.bits();
+
+    //右下少绘制一行一列，用以形成一级参考线
+    static int interval = 0;
+    if(baseUnitSize < 8)
+        interval = 0;
+    else
+        interval = 4;
+
+    unsigned char b = color & 0Xff;
+    unsigned char g = color>>8 & 0Xff;
+    unsigned char r = color>>16 & 0Xff;
+
+    for(int i = x + interval; i < x + (baseUnitSize*4); i += 4)
+    {
+        for(int j = y + interval; j < y + (baseUnitSize*4); j += 4)
+        {
+            //image.setPixel(i, j, color); //以一个个像素点绘制基础单元
+            *(ppix + i + j*image.width()) = b; //B
+            *(ppix + i + j*image.width() +1) = g; //G
+            *(ppix + i + j*image.width() +2) = r; //R
+        }
+    }
+}
+
 void MatrixView::drawReferenceLine(QPainter &painter)
 {
     //基础单元为一个像素时取消参考线
@@ -563,4 +590,51 @@ void MatrixView::FPSDisplayOnOff()
 {
     fpsOnOff = !fpsOnOff;
     FrameSum = 0;
+}
+
+void MatrixView::takePicture()
+{
+    static short sum = 0;
+
+    if(selectedUnitRect.isValid())
+    {
+        QImage picture(selectedUnitRect.width(), selectedUnitRect.height(), QImage::Format_RGB32);
+        picture.fill(VIEW::LUMINOSITY_1_17);
+        //qDebug() << selectedUnitRect;
+        auto modalP = model->getModel();
+
+        //绘制模型图像
+        int modelWidth = selectedUnitRect.width() / 8;
+        int modelHeight = selectedUnitRect.height() / 8;
+        for(int i = 0; i < modelWidth; ++i)
+        {
+            for(int j = 0; j < modelHeight; ++j)
+            {
+                QRgb color;
+
+                //Get modeldata and select color
+                int x = i + modelOffsetX + selectedUnitRect.left()/8;
+                int y = j + modelOffsetY + selectedUnitRect.top()/8;
+                int value = modalP[x][y];
+                if(value == died)
+                    color = dieColor;
+                else if(value == lived)
+                    color = liveColer;
+                else
+                    color = qRgb(255, 0, 0);
+
+                //qDebug() << x << y << value;
+                drawBaseUnit(i * baseUnitSize * 4, j * baseUnitSize * 4, color, picture);
+            }
+        }
+
+        QDateTime currentTime = QDateTime::currentDateTime();
+        picture.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+        //qDebug() << currentTime.toString("yyyyMMddhhmm-ss");
+    }
+    else
+    {
+        QDateTime currentTime = QDateTime::currentDateTime();
+        image.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+    }
 }
