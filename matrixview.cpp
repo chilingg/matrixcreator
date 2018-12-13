@@ -394,6 +394,11 @@ void MatrixView::paintEvent(QPaintEvent *)
         drawFPSText(painter);
     }
 
+    if(animationOnOff)
+    {
+        animationOnOff = drawTakePicture(painter);
+    }
+
     //qDebug() << size() << "-->This is size()";
     //qDebug() << selectedUnitRect << "Selected unit rect";
 }
@@ -572,6 +577,34 @@ void MatrixView::drawFPSText(QPainter &painter)
     //qDebug() << "fps: " << fps;
 }
 
+bool MatrixView::drawTakePicture(QPainter &painter)
+{
+    qDebug() << "In drawTakePicture";
+
+    static short sum = 0;
+    ++sum;
+    if(sum == 8)
+    {
+        sum = 0;
+        return false;
+    }
+
+    if(selectedUnitRect.isValid())
+    {
+        QImage picture(selectedUnitRect.width(), selectedUnitRect.height(), QImage::Format_RGB32);
+        picture.fill(VIEW::LUMINOSITY_1_17);
+        painter.drawImage(selectedUnitRect, picture);
+    }
+    else
+    {
+        QImage picture = image;
+        picture.fill(VIEW::LUMINOSITY_1_17);
+        painter.drawImage(0, 0, picture);
+    }
+
+    return true;
+}
+
 void MatrixView::FPSCount()
 {
     static int interval = time.elapsed();
@@ -629,12 +662,12 @@ void MatrixView::takePicture()
         }
 
         QDateTime currentTime = QDateTime::currentDateTime();
-        picture.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+        //picture.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
         //qDebug() << currentTime.toString("yyyyMMddhhmm-ss");
     }
     else
     {
         QDateTime currentTime = QDateTime::currentDateTime();
-        image.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+        //image.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
     }
 }

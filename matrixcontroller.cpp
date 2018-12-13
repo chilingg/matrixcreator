@@ -274,12 +274,19 @@ void MatriController::mouseReleaseEvent(QMouseEvent *event)
 
 void MatriController::timerEvent(QTimerEvent *)
 {
-    if(start == false)
-        return;
-
     //qDebug() << "-->In the timer";
-    model->calculusModelThread();
-    view->update();
+
+    if(start)
+    {
+        model->calculusModelThread();
+        view->update();
+    }
+    else if(view->currentStatus())
+    {
+        qDebug() << "In timerEvent";
+        view->update();
+    }
+
 }
 
 void MatriController::keyPressEvent(QKeyEvent *event)
@@ -328,6 +335,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_F12)//拍照
     {
         view->takePicture();
+        view->startAnimation();
         return;
     }
 

@@ -40,6 +40,8 @@ public:
     void FPSDisplayOnOff();
 
     void takePicture();//获取选区或屏幕照片
+    void startAnimation(){animationOnOff = true;}
+    bool currentStatus(){ return animationOnOff; }
 
 protected:
     void paintEvent(QPaintEvent *);
@@ -49,6 +51,7 @@ protected:
     void drawReferenceLine(QPainter &painter);//绘制参考线
     void drawSelectBox(QPainter &painter);
     void drawFPSText(QPainter &painter);
+    bool drawTakePicture(QPainter &painter);//绘制拍照动画
 
 private:
     MatrixModel *model;
@@ -89,9 +92,11 @@ private:
     double fps;
     int FrameSum;
     bool fpsOnOff;
-
     //fps计算2
     QTime time;
+
+    //动画
+    bool animationOnOff = false;
 };
 
 namespace VIEW
