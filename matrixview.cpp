@@ -277,7 +277,7 @@ void MatrixView::zoomView(int clickedX, int clickedY, bool zoom)
 void MatrixView::referenceLineOnOff()
 {
     referenceLine = !referenceLine;
-    redraw = !redraw;
+    //redraw = !redraw; 取消一级参考线
 }
 
 void MatrixView::centerView()
@@ -384,6 +384,11 @@ void MatrixView::paintEvent(QPaintEvent *)
     if(referenceLine)
         drawReferenceLine(painter); //绘制参考线
 
+    if(animationOnOff)//绘制动画
+    {
+        animationOnOff = drawTakePicture(painter);
+    }
+
     if(selectedUnitRect.isValid()) //绘制选框
         drawSelectBox(painter);
 
@@ -394,11 +399,6 @@ void MatrixView::paintEvent(QPaintEvent *)
         drawFPSText(painter);
     }
 
-    if(animationOnOff)
-    {
-        animationOnOff = drawTakePicture(painter);
-    }
-
     //qDebug() << size() << "-->This is size()";
     //qDebug() << selectedUnitRect << "Selected unit rect";
 }
@@ -407,7 +407,7 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color)
 {
     //右下少绘制一行一列，用以形成一级参考线
     static int interval = 0;
-    if(baseUnitSize < 8)
+    if(baseUnitSize < 8 || !referenceLine)
         interval = 0;
     else
         interval = 4;
@@ -434,7 +434,7 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
 
     //右下少绘制一行一列，用以形成一级参考线
     static int interval = 0;
-    if(baseUnitSize < 8)
+    if(baseUnitSize < 8 || !referenceLine)
         interval = 0;
     else
         interval = 4;
@@ -447,7 +447,7 @@ void MatrixView::drawBaseUnit(int x, int y, QRgb color, QImage &image)
     {
         for(int j = y + interval; j < y + (baseUnitSize*4); j += 4)
         {
-            //image.setPixel(i, j, color); //以一个个像素点绘制基础单元
+            //qDebug() << i << j << image.width() << baseUnitSize;
             *(ppix + i + j*image.width()) = b; //B
             *(ppix + i + j*image.width() +1) = g; //G
             *(ppix + i + j*image.width() +2) = r; //R
@@ -579,7 +579,7 @@ void MatrixView::drawFPSText(QPainter &painter)
 
 bool MatrixView::drawTakePicture(QPainter &painter)
 {
-    qDebug() << "In drawTakePicture";
+    //qDebug() << "In drawTakePicture";
 
     static short sum = 0;
     ++sum;
@@ -602,6 +602,7 @@ bool MatrixView::drawTakePicture(QPainter &painter)
         painter.drawImage(0, 0, picture);
     }
 
+    notRedraw();
     return true;
 }
 
@@ -637,8 +638,8 @@ void MatrixView::takePicture()
         auto modalP = model->getModel();
 
         //绘制模型图像
-        int modelWidth = selectedUnitRect.width() / 8;
-        int modelHeight = selectedUnitRect.height() / 8;
+        int modelWidth = selectedUnitRect.width() / baseUnitSize;
+        int modelHeight = selectedUnitRect.height() / baseUnitSize;
         for(int i = 0; i < modelWidth; ++i)
         {
             for(int j = 0; j < modelHeight; ++j)
@@ -646,8 +647,8 @@ void MatrixView::takePicture()
                 QRgb color;
 
                 //Get modeldata and select color
-                int x = i + modelOffsetX + selectedUnitRect.left()/8;
-                int y = j + modelOffsetY + selectedUnitRect.top()/8;
+                int x = i + modelOffsetX + selectedUnitRect.left()/baseUnitSize;
+                int y = j + modelOffsetY + selectedUnitRect.top()/baseUnitSize;
                 int value = modalP[x][y];
                 if(value == died)
                     color = dieColor;
@@ -656,18 +657,18 @@ void MatrixView::takePicture()
                 else
                     color = qRgb(255, 0, 0);
 
-                //qDebug() << x << y << value;
+                //qDebug() << i << j << baseUnitSize;
                 drawBaseUnit(i * baseUnitSize * 4, j * baseUnitSize * 4, color, picture);
             }
         }
 
         QDateTime currentTime = QDateTime::currentDateTime();
-        //picture.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+        picture.save(currentTime.toString("yyyyMMddhhmm-ss%1.png").arg(sum), "PNG");
         //qDebug() << currentTime.toString("yyyyMMddhhmm-ss");
     }
     else
     {
         QDateTime currentTime = QDateTime::currentDateTime();
-        //image.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+        image.save(currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
     }
 }

@@ -283,7 +283,7 @@ void MatriController::timerEvent(QTimerEvent *)
     }
     else if(view->currentStatus())
     {
-        qDebug() << "In timerEvent";
+        view->notRedraw();
         view->update();
     }
 
@@ -296,7 +296,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
     if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Apostrophe)//ctrl+; 参考线开关
     {
         view->referenceLineOnOff();
-        view->notRedraw();
+        //view->notRedraw(); //不要更新一级参考线
         view->update();
     }
 
