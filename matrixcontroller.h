@@ -3,52 +3,30 @@
 
 #include <QMainWindow>
 #include <QMouseEvent>
-#include <QTimerEvent>
+//#include <QTimerEvent>
 #include <QKeyEvent>
 #include <QWheelEvent>
 #include <QCursor>
 
-#include "matrixmodel.h"
-#include "matrixview.h"
-
-enum CursorTool
-{
-    POINT,
-    CIRCLE,
-    TRANSLATE
-};
-
-class MatriController : public QMainWindow
+class MatrixController : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MatriController(QWidget *parent = 0);
-    ~MatriController();
+    enum CursorTool;
+    MatrixController(QWidget *parent = nullptr);
 
 protected:
-    void mousePressEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void timerEvent(QTimerEvent *event);
-    void keyPressEvent(QKeyEvent *event);
-    void keyReleaseEvent(QKeyEvent *event);
-    void wheelEvent(QWheelEvent *event);
 
 private:
-    MatrixModel *model;
-    MatrixView *view;
-    bool start;
-    QPoint moveViewPos;
-    QRect selectRect;
-    QPoint clickedPos;
-
-    CursorTool cursorTool;
-    CursorTool lastCursorTool;
-    QCursor circleCursor;
-    QCursor pointCursor;
-    QCursor translateCursor;
+    //CursorTool cursorTool;
 };
+
+enum MatrixController::CursorTool
+{
+    POINT,
+    CIRCLE,
+    TRANSLATE
+}
 
 #endif // MATRIXCONTROLLER_H
