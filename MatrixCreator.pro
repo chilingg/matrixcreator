@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui concurrent
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -24,10 +24,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
     matrixmodel.cpp \
-    matrixview.cpp
+    matrixview.cpp \
+    matrixcontroller.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += \
     matrixmodel.h \
-    matrixview.h
+    matrixview.h \
+    constants.h \
+    matrixcontroller.h
+
+RESOURCES += \
+    icons/icons.qrc

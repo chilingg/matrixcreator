@@ -1,0 +1,21 @@
+<RCC>
+    <qresource prefix="/cursor">
+        <file alias="circleSelect">circle.png</file>
+        <file alias="pointSelect">point.png</file>
+        <file alias="zoomView">zoom.png</file>
+    </qresource>
+    <qresource prefix="/texts">
+        <file alias="0">texts/0.png</file>
+        <file alias="1">texts/1.png</file>
+        <file alias="2">texts/2.png</file>
+        <file alias="3">texts/3.png</file>
+        <file alias="4">texts/4.png</file>
+        <file alias="5">texts/5.png</file>
+        <file alias="6">texts/6.png</file>
+        <file alias="7">texts/7.png</file>
+        <file alias="8">texts/8.png</file>
+        <file alias="9">texts/9.png</file>
+        <file alias="FPS">texts/FPS.png</file>
+        <file alias="point">texts/point.png</file>
+    </qresource>
+</RCC>
