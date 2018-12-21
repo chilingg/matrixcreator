@@ -13,7 +13,6 @@ class MatrixController : public QMainWindow
     Q_OBJECT
 
 public:
-    enum CursorTool;
     MatrixController(QWidget *parent = nullptr);
 
 protected:
@@ -22,11 +21,11 @@ private:
     //CursorTool cursorTool;
 };
 
-enum MatrixController::CursorTool
+enum CursorTool
 {
     POINT,
     CIRCLE,
     TRANSLATE
-}
+};
 
 #endif // MATRIXCONTROLLER_H

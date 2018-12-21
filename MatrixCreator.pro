@@ -25,12 +25,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp \
     matrixcontroller.cpp \
-    lifegamemodel.cpp
+    matrixmodel.cpp
 
 HEADERS  += \
     matrixcontroller.h \
     matrixmodel.h \
-    lifegamemodel.h
+    matrixmodel.h
 
 RESOURCES += \
     icon.qrc

@@ -1,16 +1,31 @@
 #ifndef MATRIXMODEL_H
 #define MATRIXMODEL_H
 
+#include <cstddef>
+#include <QMutex>
+#include <vector>
+
+using MatrixSize = std::vector<int>::size_type;
+using std::vector;
+
 class MatrixModel
 {
 public:
-    MatrixModel();
+    MatrixModel(MatrixSize x, MatrixSize y);
     ~MatrixModel();
 
-    virtual int getUnitValue(unsigned x, unsigned y) = 0;		//获取单元值
-    virtual void updateModel() = 0;								//更新数据
-    virtual void changeModelValue(unsigned x, unsigned y) = 0;	//修改单元的值
-    virtual void clearModel(unsigned x, unsigned y, unsigned widht, unsigned height) = 0;	//清空单元值
+    int getUnitValue(MatrixSize x, MatrixSize y);		//获取单元值
+    void updateModel();									//更新数据
+    void changeModelValue(MatrixSize x, MatrixSize y);	//修改单元的值
+    void clearModel(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height);	//清空单元值
+    
+private:
+    vector<int> *currentModelP;
+    
+    bool updateStatus;
+    MatrixSize updateLine;
+    QMutex lineMutex;
+    QMutex changeMutex;
 };
 
 #endif // MATRIXMODEL_H
