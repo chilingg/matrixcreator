@@ -18,12 +18,13 @@ using std::vector;
 class MatrixModel
 {
 public:
-    enum ModelPattern{ EmptyPattern, RedKernel, LifeGameT, LifeGame };
+    enum ModelPattern{ EmptyPattern, LifeGameT, LifeGame };
 
     MatrixModel(MatrixSize widht, ModelPattern pattern);
     ~MatrixModel();
 
     int getUnitValue(MatrixSize x, MatrixSize y) const;		//获取单元值
+    const MatrixSize &getModelSize() const;
     void (MatrixModel::*updateModel)();									//更新数据
     void changeModelValue(MatrixSize x, MatrixSize y, int value);	//修改单元的值
     void clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height);	//清空单元值
@@ -79,6 +80,11 @@ inline int MatrixModel::getUnitValue(MatrixSize x, MatrixSize y) const
 #endif
 
     return currentModel[x+y*modelSize];
+}
+
+inline const MatrixSize &MatrixModel::getModelSize() const
+{
+    return modelSize;
 }
 
 inline void MatrixModel::changeModelValue(MatrixSize x, MatrixSize y, int value)

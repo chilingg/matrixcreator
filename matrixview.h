@@ -14,18 +14,27 @@ class MatrixView : public QMainWindow
 public:
     explicit MatrixView(MatrixModel &m, QWidget *parent = nullptr);
     //~MatrixView();
+    void moveToCoordinate(MatrixSize column, MatrixSize row);//视图中显示的模型坐标是以模型中心为原点的坐标系
+    bool InView(QPoint clicktedPos) const;//查看点击坐标是否发生在视图中
+
+protected:
+    void resizeEvent(QResizeEvent *);
+    void paintEvent(QPaintEvent *);
 
 private:
+    void updateViewSize();
+
     const MatrixModel &model;
+    const MatrixSize &modelSize;
     //绘制的矩阵与客户区坐标偏移量
-    unsigned viewOffsetX;
-    unsigned viewOffsetY;
+    MatrixSize viewOffsetX;
+    MatrixSize viewOffsetY;
     //视图与模型坐标偏移量
-    unsigned modelOffsetX;
-    unsigned modelOffsetY;
+    MatrixSize modelOffsetX;
+    MatrixSize modelOffsetY;
     //单元在视图中的行列
-    unsigned viewColumn;
-    unsigned viewRow;
+    MatrixSize viewColumn;
+    MatrixSize viewRow;
     //缩放级别组
     array<const unsigned, 7> zoomList;
     unsigned unitSize;	//基础单位大小（px）
@@ -34,7 +43,6 @@ private:
     bool unitsOnOff;	//绘制模型单元
     bool gridOnOff; 	//绘制网格参考线
     bool fpsOnOff;		//fps显示
-    QPoint moveOnOff;	//移动视图
     bool animationOnOff;//动画显示
 
     QRect selectedUnitRect;	//选框
@@ -51,6 +59,27 @@ signals:
 
 public slots:
 };
+
+inline void MatrixView::moveToCoordinate(MatrixSize column, MatrixSize row)
+{
+    modelOffsetX = column;
+    modelOffsetY = row;
+}
+
+inline bool MatrixView::InView(QPoint clicktedPos) const
+{
+    if(clicktedPos.x() < 0 || clicktedPos.y() < 0)
+        return false;
+
+    MatrixSize x = static_cast<MatrixSize>(clicktedPos.x()) - viewOffsetX;
+    MatrixSize y = static_cast<MatrixSize>(clicktedPos.y()) - viewOffsetY;
+
+    if(x < viewColumn * unitSize)
+        if(y < viewRow * unitSize)
+            return true;
+
+    return false;
+}
 
 namespace MatrixColor
 {
