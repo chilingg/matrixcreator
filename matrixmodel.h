@@ -20,11 +20,11 @@ class MatrixModel
 public:
     enum ModelPattern{ EmptyPattern, LifeGameT, LifeGame };
 
-    MatrixModel(MatrixSize widht, ModelPattern pattern);
+    MatrixModel(unsigned widht, ModelPattern pattern);
     ~MatrixModel();
 
     int getUnitValue(MatrixSize x, MatrixSize y) const;		//获取单元值
-    const MatrixSize &getModelSize() const;
+    const unsigned &getModelSize() const;
     void (MatrixModel::*updateModel)();									//更新数据
     void changeModelValue(MatrixSize x, MatrixSize y, int value);	//修改单元的值
     void clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height);	//清空单元值
@@ -57,7 +57,7 @@ private:
     vector<QFuture<void> > future;
     vector<int> currentModel;
     ModelPattern modelPattern;
-    MatrixSize modelSize;
+    unsigned modelSize;
     
     bool updateStatus;
     MatrixSize updateLine;
@@ -82,7 +82,7 @@ inline int MatrixModel::getUnitValue(MatrixSize x, MatrixSize y) const
     return currentModel[x+y*modelSize];
 }
 
-inline const MatrixSize &MatrixModel::getModelSize() const
+inline const unsigned &MatrixModel::getModelSize() const
 {
     return modelSize;
 }

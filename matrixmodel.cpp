@@ -1,6 +1,6 @@
 #include "matrixmodel.h"
 
-MatrixModel::MatrixModel(MatrixSize size, ModelPattern pattern):
+MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     THREADS(std::thread::hardware_concurrency()),
     future(THREADS),	//获取cpu核数
     currentModel(size*size, 0),
@@ -44,8 +44,6 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
 {
     //结束之前的模式
     switch (modelPattern) {
-    case RedKernel:
-        break;
     case LifeGameT:
         tempModel.clear();
         break;
@@ -58,8 +56,6 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
 
     //开始新的模式
     switch (after) {
-    case RedKernel:
-        break;
     case LifeGameT:
         tempModel.assign(modelSize*modelSize, 0);
         updateModel = &MatrixModel::LFTransferModelThread;

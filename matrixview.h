@@ -3,6 +3,7 @@
 
 #include "matrixmodel.h"
 #include <QMainWindow>
+#include <QPainter>
 #include <array>
 
 using std::array;
@@ -14,7 +15,7 @@ class MatrixView : public QMainWindow
 public:
     explicit MatrixView(MatrixModel &m, QWidget *parent = nullptr);
     //~MatrixView();
-    void moveToCoordinate(MatrixSize column, MatrixSize row);//视图中显示的模型坐标是以模型中心为原点的坐标系
+    void moveToCoordinate(unsigned column, unsigned row);//视图中显示的模型坐标是以模型中心为原点的坐标系
     bool InView(QPoint clicktedPos) const;//查看点击坐标是否发生在视图中
 
 protected:
@@ -23,30 +24,40 @@ protected:
 
 private:
     void updateViewSize();
+    void moveViewCheckup();
+    void noRedrawUnit();
+    void drawBaseUnit();
+    void drawReferenceLine();
+    bool drawTakePicture();
+    void drawSelectBox();
+    void drawFPSText();
+    void FPSCount();
 
     const MatrixModel &model;
-    const MatrixSize &modelSize;
+    const unsigned &modelSize;
     //绘制的矩阵与客户区坐标偏移量
-    MatrixSize viewOffsetX;
-    MatrixSize viewOffsetY;
+    int viewOffsetX;
+    int viewOffsetY;
     //视图与模型坐标偏移量
-    MatrixSize modelOffsetX;
-    MatrixSize modelOffsetY;
+    unsigned modelOffsetX;
+    unsigned modelOffsetY;
     //单元在视图中的行列
-    MatrixSize viewColumn;
-    MatrixSize viewRow;
+    unsigned viewColumn;
+    unsigned viewRow;
     //缩放级别组
     array<const unsigned, 7> zoomList;
+    array<const QColor, 4> lineColor;
     unsigned unitSize;	//基础单位大小（px）
 
     //一些开关
     bool unitsOnOff;	//绘制模型单元
     bool gridOnOff; 	//绘制网格参考线
+    bool referencelineOnOff; 	//绘制网格参考线
     bool fpsOnOff;		//fps显示
     bool animationOnOff;//动画显示
 
     QRect selectedUnitRect;	//选框
-    QImage image;			//模型单元图像
+    QImage unitImage;			//模型单元图像
     unsigned char *ppix;	//图像像素首指针
     unsigned imageWidth;	//图像宽度
 
@@ -55,31 +66,12 @@ private:
     unsigned frameSum;
     QTime fpsTime;
 
+    QPainter painter;
+
 signals:
 
 public slots:
 };
-
-inline void MatrixView::moveToCoordinate(MatrixSize column, MatrixSize row)
-{
-    modelOffsetX = column;
-    modelOffsetY = row;
-}
-
-inline bool MatrixView::InView(QPoint clicktedPos) const
-{
-    if(clicktedPos.x() < 0 || clicktedPos.y() < 0)
-        return false;
-
-    MatrixSize x = static_cast<MatrixSize>(clicktedPos.x()) - viewOffsetX;
-    MatrixSize y = static_cast<MatrixSize>(clicktedPos.y()) - viewOffsetY;
-
-    if(x < viewColumn * unitSize)
-        if(y < viewRow * unitSize)
-            return true;
-
-    return false;
-}
 
 namespace MatrixColor
 {
@@ -109,5 +101,53 @@ namespace MatrixColor
     const QColor WARNING(255, 0, 0);	//Red
     const QColor SELECT(0, 255, 255);	//Cyan
 }
+
+inline void MatrixView::moveToCoordinate(unsigned column, unsigned row)
+{
+    modelOffsetX = column - viewColumn/2;
+    modelOffsetY = row - viewRow/2;
+
+    moveViewCheckup();
+}
+
+inline bool MatrixView::InView(QPoint clicktedPos) const
+{
+    if(clicktedPos.x() < viewOffsetX || clicktedPos.y() < viewOffsetY)
+        return false;
+
+    unsigned x = clicktedPos.x() - viewOffsetX;
+    unsigned y = clicktedPos.y() - viewOffsetY;
+
+    if(x < viewColumn * unitSize && y < viewRow * unitSize)
+        return true;
+    else
+        return false;
+}
+
+inline void MatrixView::noRedrawUnit()
+{
+    unitsOnOff = false;
+}
+
+inline void MatrixView::drawSelectBox()
+{
+    painter.setPen(MatrixColor::SELECT);
+    painter.drawRect(selectedUnitRect);
+}
+
+inline void MatrixView::FPSCount()
+{
+    static int interval = fpsTime.elapsed();
+
+    //每N帧计算一次帧率
+    if(frameSum == 8)
+    {
+        //qDebug() << "fps: " << (time.elapsed() - interval);
+        fpsCount = 1000.0 / (fpsTime.elapsed() - interval) * 8.0;
+        interval = fpsTime.elapsed();
+        frameSum = 0;
+    }
+}
+
 
 #endif // MATRIXVIEW_H
