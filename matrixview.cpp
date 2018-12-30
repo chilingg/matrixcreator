@@ -4,7 +4,7 @@
 MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     QMainWindow(parent),
     model(m),
-    modelSize(m.getModelSize()),
+    MODELSIZE(m.getModelSize()),
     viewOffsetX(0),
     viewOffsetY(0),
     modelOffsetX(0),
@@ -19,11 +19,10 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
         MatrixColor::LUMINOSITY_2_68,
         },
     unitSize(zoomList[3]),
-    unitsOnOff(true),
-    gridOnOff(true),
-    referencelineOnOff(true),
-    fpsOnOff(true),
-    animationOnOff(false),
+    unitsDspl(true),
+    gridDspl(true),
+    rflDspl(true),
+    fpsDspl(true),
     selectedUnitRect(),
     unitImage(),
     ppix(nullptr),
@@ -39,15 +38,53 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     setPalette(pal);
 
     //居中显示模型单元
-    moveToCoordinate(modelSize/2, modelSize/2);
+    moveToCoordinate(MODELSIZE/2, MODELSIZE/2);
 
     fpsTime.start();
+}
+
+void MatrixView::zoomView(MPoint cdt, MatrixView::Zoom zoom)
+{
+    //获取当前缩放级别
+    size_t level = 0;
+    while(level < zoomList.size() && zoomList[level] >= unitSize)
+    {
+        ++level;
+    }
+
+    if(zoom == ZoomIn)
+    {
+        if(level < zoomList.size() - 1)
+            unitSize = zoomList[level+1];
+        else if(level == zoomList.size() - 1)
+            unitSize = zoomList[level];//修复过大的unitsize
+    }
+    else if(zoom == ZoomOut && level != 0)
+    {
+        unitSize = zoomList[level - 1];
+    }
+
+    //缩放后鼠标处的模型坐标
+    MPoint afterCdt = inView(cdt.clickted);
+    if(!afterCdt.valid)
+        return;
+
+    //修改模型偏差值，使鼠标位置下的单元仍是缩放之前的单元
+    if(afterCdt.modelColumn < cdt.modelColumn)
+        modelOffsetX += cdt.modelColumn - afterCdt.modelColumn;
+    else
+        modelOffsetX -= afterCdt.modelColumn - cdt.modelColumn;
+    if(afterCdt.modelRow < cdt.modelRow)
+        modelOffsetY += cdt.modelRow - afterCdt.modelRow;
+    else
+        modelOffsetY -= afterCdt.modelRow - cdt.modelRow;
+
+    updateViewSize();
 }
 
 void MatrixView::resizeEvent(QResizeEvent *)
 {
     updateViewSize();
-    moveViewCheckup();
 }
 
 void MatrixView::paintEvent(QPaintEvent *)
@@ -55,22 +92,19 @@ void MatrixView::paintEvent(QPaintEvent *)
     //添加坐标偏移，使视图居中于窗口
     painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
-    if(unitsOnOff)
-        drawBaseUnit();//绘制单元图像
+    if(unitsDspl)
+        drawBaseUnits();//绘制单元图像
     else
-        unitsOnOff = true;
+        unitsDspl = true;
     painter.drawImage(0, 0, unitImage);//图像绘制到视图
 
-    if(referencelineOnOff && unitSize != zoomList[0])
+    if(rflDspl && unitSize != zoomList[0])
         drawReferenceLine();
-
-    if(animationOnOff)//绘制动画
-        animationOnOff = drawTakePicture();
 
     if(selectedUnitRect.isValid()) //绘制选框
         drawSelectBox();
 
-    if(fpsOnOff)
+    if(fpsDspl)
     {
         frameSum++;
         //sum和fps在fpsThread中修改
@@ -83,18 +117,34 @@ void MatrixView::updateViewSize()
 {
     unsigned mWidth = static_cast<unsigned>(width());
     unsigned mHeight = static_cast<unsigned>(height());
+    unsigned oldColumn = viewColumn;
+    unsigned oldRow = viewRow;
+
     //计算视图显示的单元行列
     viewColumn = mWidth / unitSize;
     viewRow = mHeight / unitSize;
     //如果可显示单元大于模型最大单元
-    if(viewColumn > modelSize)
-        viewColumn = modelSize;
-    if(viewRow > modelSize)
-        viewRow = modelSize;
+    if(viewColumn > MODELSIZE)
+        viewColumn = MODELSIZE;
+    if(viewRow > MODELSIZE)
+        viewRow = MODELSIZE;
+
+    //行列变动时保持模型单元中心不变
+    if(viewColumn != oldColumn)
+    {
+        modelOffsetX += oldColumn/2;
+        modelOffsetX -= viewColumn/2;
+    }
+    else if(viewRow != oldRow)
+    {
+        modelOffsetY += oldRow/2;
+        modelOffsetY -= viewRow/2;
+    }
+    moveViewCheckup();
 
     //计算视图偏移量
-    viewOffsetX = (mWidth - viewColumn * modelSize) / 2;
-    viewOffsetY = (mHeight - viewRow * modelSize) / 2;
+    viewOffsetX = (mWidth - viewColumn * unitSize) / 2;
+    viewOffsetY = (mHeight - viewRow * unitSize) / 2;
 
     //构建显示模型单元的图像
     unitImage = QImage(viewColumn * unitSize, viewRow * unitSize, QImage::Format_RGB32);
@@ -103,34 +153,7 @@ void MatrixView::updateViewSize()
     imageWidth = static_cast<unsigned>(unitImage.width());
 }
 
-void MatrixView::moveViewCheckup()
-{
-    static unsigned oldColumn = 0;
-    static unsigned oldRow = 0;
-
-    //行列变动时保持模型单元中心不变
-    if(viewColumn != oldColumn)
-    {
-        modelOffsetX += oldColumn/2;
-        modelOffsetX -= viewColumn/2;
-        oldColumn = viewColumn;
-    }
-    else if(viewRow != oldRow)
-    {
-        modelOffsetY += oldRow/2;
-        modelOffsetY -= viewRow/2;
-        oldRow = viewRow;
-    }
-
-    //检查模型单元显示
-    if(modelOffsetX + viewColumn > modelSize)
-        modelOffsetX = modelSize - viewColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
-    if(modelOffsetY + viewRow > modelSize)
-        modelOffsetY = modelSize - viewRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
-
-}
-
-void MatrixView::drawBaseUnit()
+void MatrixView::drawBaseUnits()
 {
     for(unsigned i = 0; i < viewColumn; ++i)
     {
@@ -146,7 +169,7 @@ void MatrixView::drawBaseUnit()
 
             //右下少绘制一行一列，用以形成一级参考线
             unsigned interval = 0;
-            if(unitSize < zoomList[3] || !gridOnOff)
+            if(unitSize < zoomList[3] || !gridDspl)
                 interval = 0;
             else
                 interval = 4;
@@ -205,36 +228,6 @@ void MatrixView::drawReferenceLine()
         painter.drawLine(0, j * unitSize,
                          viewColumn * unitSize - 1, j * unitSize);//绘制行
     ++level;
-}
-
-bool MatrixView::drawTakePicture()
-{
-    static short sum = 0;
-
-    if(sum == 8)
-    {
-        sum = 0;
-        return false;
-    }
-
-    if(selectedUnitRect.isValid())
-    {
-        QImage picture(selectedUnitRect.width(), selectedUnitRect.height(), QImage::Format_RGB32);
-        picture.fill(MatrixColor::LUMINOSITY_1_17);
-        painter.drawImage(selectedUnitRect, picture);
-    }
-    else
-    {
-        QImage picture = unitImage;
-        picture.fill(MatrixColor::LUMINOSITY_1_17);
-        painter.drawImage(0, 0, picture);
-    }
-
-    ++sum;
-
-    noRedrawUnit();
-
-    return true;
 }
 
 void MatrixView::drawFPSText()

@@ -32,7 +32,8 @@ HEADERS  += \
     matrixcontroller.h \
     matrixmodel.h \
     matrixmodel.h \
-    matrixview.h
+    matrixview.h \
+    mpoint.h
 
 RESOURCES += \
     icon.qrc

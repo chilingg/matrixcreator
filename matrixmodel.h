@@ -20,7 +20,7 @@ class MatrixModel
 public:
     enum ModelPattern{ EmptyPattern, LifeGameT, LifeGame };
 
-    MatrixModel(unsigned widht, ModelPattern pattern);
+    MatrixModel(unsigned widht = 0, ModelPattern pattern = EmptyPattern);
     ~MatrixModel();
 
     int getUnitValue(MatrixSize x, MatrixSize y) const;		//获取单元值
