@@ -24,7 +24,7 @@ public:
     ~MatrixModel();
 
     int getUnitValue(MatrixSize x, MatrixSize y) const;		//获取单元值
-    const unsigned &getModelSize() const;
+    unsigned getModelSize() const;
     void (MatrixModel::*updateModel)();									//更新数据
     void changeModelValue(MatrixSize x, MatrixSize y, int value);	//修改单元的值
     void clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height);	//清空单元值
@@ -82,7 +82,7 @@ inline int MatrixModel::getUnitValue(MatrixSize x, MatrixSize y) const
     return currentModel[x+y*modelSize];
 }
 
-inline const unsigned &MatrixModel::getModelSize() const
+inline unsigned MatrixModel::getModelSize() const
 {
     return modelSize;
 }

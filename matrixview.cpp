@@ -4,7 +4,7 @@
 MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     QMainWindow(parent),
     model(m),
-    MODELSIZE(m.getModelSize()),
+    MODELSIZE(static_cast<int>(m.getModelSize())),
     viewOffsetX(0),
     viewOffsetY(0),
     modelOffsetX(0),
@@ -25,8 +25,6 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     fpsDspl(true),
     selectedUnitRect(),
     unitImage(),
-    ppix(nullptr),
-    imageWidth(0),
     fpsCount(0),
     frameSum(0),
     painter(this)
@@ -41,6 +39,26 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     moveToCoordinate(MODELSIZE/2, MODELSIZE/2);
 
     fpsTime.start();
+}
+
+MPoint MatrixView::inView(QPoint clicktedPos) const
+{
+    MPoint cdt {false,0,0,clicktedPos,QRect()};
+    int viewX = clicktedPos.x() - viewOffsetX;
+    viewX -= viewX % unitSize;
+    int viewY = clicktedPos.y() - viewOffsetY;
+    viewY -= viewY % unitSize;
+
+    if(viewX >= 0 && viewColumn * unitSize && viewY >= 0 && viewY < viewRow * unitSize)
+    {
+        cdt.valid = true;
+            cdt.modelColumn = viewX / unitSize + modelOffsetX;
+            cdt.modelRow = viewY / unitSize + modelOffsetY;
+            cdt.viewRect = QRect(QPoint(viewX, viewY),
+                                 QPoint(viewX+unitSize-1, viewY+unitSize-1));
+    }
+
+    return cdt;
 }
 
 void MatrixView::zoomView(MPoint cdt, MatrixView::Zoom zoom)
@@ -59,10 +77,12 @@ void MatrixView::zoomView(MPoint cdt, MatrixView::Zoom zoom)
         else if(level == zoomList.size() - 1)
             unitSize = zoomList[level];//修复过大的unitsize
     }
-    else if(zoom == ZoomOut && level != 0)
+    else if(zoom == ZoomOut && level > 0)
     {
         unitSize = zoomList[level - 1];
     }
+
+    updateViewSize();
 
     //缩放后鼠标处的模型坐标
     MPoint afterCdt = inView(cdt.clickted);
@@ -70,16 +90,36 @@ void MatrixView::zoomView(MPoint cdt, MatrixView::Zoom zoom)
         return;
 
     //修改模型偏差值，使鼠标位置下的单元仍是缩放之前的单元
-    if(afterCdt.modelColumn < cdt.modelColumn)
-        modelOffsetX += cdt.modelColumn - afterCdt.modelColumn;
-    else
-        modelOffsetX -= afterCdt.modelColumn - cdt.modelColumn;
-    if(afterCdt.modelRow < cdt.modelRow)
-        modelOffsetY += cdt.modelRow - afterCdt.modelRow;
-    else
-        modelOffsetY -= afterCdt.modelRow - cdt.modelRow;
+    modelOffsetX -= afterCdt.modelColumn - cdt.modelColumn;
+    modelOffsetY -= afterCdt.modelRow - cdt.modelRow;
 
-    updateViewSize();
+    moveViewCheckup();
+}
+
+void MatrixView::takePicture(QString path)
+{
+    //图片的后缀，避免同名文件
+    static short sum = 0;
+    QDateTime currentTime = QDateTime::currentDateTime();
+
+    if(selectedUnitRect.isValid())
+    {
+        QImage picture(selectedUnitRect.width(), selectedUnitRect.height(), QImage::Format_RGB32);
+        picture.fill(MatrixColor::LUMINOSITY_1_17);
+
+        //绘制模型图像
+        int modelLeft = selectedUnitRect.left() / unitSize;
+        int modelTop = selectedUnitRect.top() / unitSize;
+        int modelWidth = selectedUnitRect.width() / unitSize;
+        int modelHeight = selectedUnitRect.height() / unitSize;
+        drawBaseUnits(modelLeft, modelTop, modelWidth, modelHeight, picture);
+
+        picture.save(path + currentTime.toString("yyyyMMddhhmm-ss%1.png").arg(sum), "PNG");
+    }
+    else
+    {
+        unitImage.save(path + currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+    }
 }
 
 void MatrixView::resizeEvent(QResizeEvent *)
@@ -115,14 +155,12 @@ void MatrixView::paintEvent(QPaintEvent *)
 
 void MatrixView::updateViewSize()
 {
-    unsigned mWidth = static_cast<unsigned>(width());
-    unsigned mHeight = static_cast<unsigned>(height());
-    unsigned oldColumn = viewColumn;
-    unsigned oldRow = viewRow;
+    int oldColumn = viewColumn;
+    int oldRow = viewRow;
 
     //计算视图显示的单元行列
-    viewColumn = mWidth / unitSize;
-    viewRow = mHeight / unitSize;
+    viewColumn = width() / unitSize;
+    viewRow = height() / unitSize;
     //如果可显示单元大于模型最大单元
     if(viewColumn > MODELSIZE)
         viewColumn = MODELSIZE;
@@ -143,32 +181,33 @@ void MatrixView::updateViewSize()
     moveViewCheckup();
 
     //计算视图偏移量
-    viewOffsetX = (mWidth - viewColumn * unitSize) / 2;
-    viewOffsetY = (mHeight - viewRow * unitSize) / 2;
+    viewOffsetX = (width() - viewColumn * unitSize) / 2;
+    viewOffsetY = (height() - viewRow * unitSize) / 2;
 
     //构建显示模型单元的图像
     unitImage = QImage(viewColumn * unitSize, viewRow * unitSize, QImage::Format_RGB32);
     unitImage.fill(MatrixColor::LUMINOSITY_1_17);
-    ppix = unitImage.bits();
-    imageWidth = static_cast<unsigned>(unitImage.width());
 }
 
-void MatrixView::drawBaseUnits()
+void MatrixView::drawBaseUnits(int left, int top, int mWidth, int mHeight, QImage &picture)
 {
-    for(unsigned i = 0; i < viewColumn; ++i)
+    unsigned char *pp = picture.bits();
+    int pWidht = picture.width();
+
+    for(int i = 0; i < mWidth; ++i)
     {
-        for(unsigned j = 0; j < viewRow; ++j)
+        for(int j = 0; j < mHeight; ++j)
         {
             //Get modeldata and select color
             QRgb color;
-            int value = model.getUnitValue(i + modelOffsetX, j + modelOffsetY);
+            int value = model.getUnitValue(i + modelOffsetX + left, j + modelOffsetY + top);
             if(value <= 0)
                 color = MatrixColor::LUMINOSITY_0_0.rgb();
             else
                 color = MatrixColor::LUMINOSITY_4_204.rgb();
 
             //右下少绘制一行一列，用以形成一级参考线
-            unsigned interval = 0;
+            int interval = 0;
             if(unitSize < zoomList[3] || !gridDspl)
                 interval = 0;
             else
@@ -178,16 +217,16 @@ void MatrixView::drawBaseUnits()
             unsigned char g = color>>8 & 0Xff;
             unsigned char r = color>>16 & 0Xff;
 
-            unsigned x = i * unitSize * 4;
-            unsigned y = j * unitSize * 4;
-            for(unsigned k = x + interval; i < x + (unitSize*4); i += 4)
+            int x = i * unitSize * 4;
+            int y = j * unitSize * 4;
+            for(int k = x + interval; i < x + (unitSize*4); i += 4)
             {
-                for(unsigned l = y + interval; j < y + (unitSize*4); j += 4)
+                for(int l = y + interval; j < y + (unitSize*4); j += 4)
                 {
                     //image.setPixel(i, j, color); //以一个个像素点绘制基础单元
-                    *(ppix + k + l*imageWidth) = b; //B
-                    *(ppix + k + l*imageWidth +1) = g; //G
-                    *(ppix + k + l*imageWidth +2) = r; //R
+                    *(pp + k + l*pWidht) = b; //B
+                    *(pp + k + l*pWidht +1) = g; //G
+                    *(pp + k + l*pWidht +2) = r; //R
                 }
             }
         }
@@ -201,30 +240,30 @@ void MatrixView::drawReferenceLine()
 
     //二级参考线，相隔十个单元
     painter.setPen(lineColor[level]);
-    for(unsigned i = 10 - (modelOffsetX % 10); i < viewColumn; i += 10)
+    for(int i = 10 - (modelOffsetX % 10); i < viewColumn; i += 10)
         painter.drawLine(i * unitSize, 0,
                          i * unitSize, viewRow * unitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
-    for(unsigned j = 10 - (modelOffsetY % 10); j < viewRow; j += 10)
+    for(int j = 10 - (modelOffsetY % 10); j < viewRow; j += 10)
         painter.drawLine(0, j * unitSize,
                          viewColumn * unitSize - 1, j * unitSize);//绘制行
     ++level;
 
     //三级参考线，相隔百个单元
     painter.setPen(lineColor[level]);
-    for(unsigned i = 100 - (modelOffsetX % 100); i < viewColumn; i += 100)
+    for(int i = 100 - (modelOffsetX % 100); i < viewColumn; i += 100)
         painter.drawLine(i * unitSize, 0,
                          i * unitSize, viewRow * unitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
-    for(unsigned j = 100 - (modelOffsetY % 100); j < viewRow; j += 100)
+    for(int j = 100 - (modelOffsetY % 100); j < viewRow; j += 100)
         painter.drawLine(0, j * unitSize,
                          viewColumn * unitSize - 1, j * unitSize);//绘制行
     ++level;
 
     //四级参考线，相隔千个单元
     painter.setPen(lineColor[level]);
-    for(unsigned i = 1000 - (modelOffsetX % 1000); i < viewColumn; i += 1000)
+    for(int i = 1000 - (modelOffsetX % 1000); i < viewColumn; i += 1000)
         painter.drawLine(i * unitSize, 0,
                          i * unitSize, viewRow * unitSize - 1);//绘制列，因以0点象素起，需扣除多的一点象素
-    for(unsigned j = 1000 - (modelOffsetY % 1000); j < viewRow; j += 1000)
+    for(int j = 1000 - (modelOffsetY % 1000); j < viewRow; j += 1000)
         painter.drawLine(0, j * unitSize,
                          viewColumn * unitSize - 1, j * unitSize);//绘制行
     ++level;

@@ -17,14 +17,18 @@ public:
     enum Zoom { ZoomIn, ZoomOut };
     explicit MatrixView(MatrixModel &m, QWidget *parent = nullptr);
     //~MatrixView();
-    void moveToCoordinate(unsigned column, unsigned row);//移动指定坐标至左上角
+    void moveToCoordinate(int column, int row);//移动指定坐标至左上角
+    void moveToCoordinate();//移动指定坐标模型中间
     void selectUnits(QRect selectBox);//显示选框
-    void translationView(unsigned top, unsigned bottom, unsigned left, unsigned right);//移动视图至指定坐标
+    void translationView(int horizontal, int vertical);//移动视图至指定坐标
     void zoomView(MPoint cdt, Zoom zoom);//缩放视图
     void referenceLineOnOff();//参考线开关
     void gridOnOff();//网格开关
     void fpsOnOff();//帧率显示开关
     void noRedrawUnits();//不重绘单元视图
+    void takePicture(QString path);//获取选区或屏幕照片
+    QPoint getViewOffsetPoint() const;
+    QRect getSelectRect() const;
     MPoint inView(QPoint clicktedPos) const;//查看点击坐标是否发生在视图中
 
 protected:
@@ -35,27 +39,27 @@ private:
     void updateViewSize();//更新视图数据
     void moveViewCheckup();//检查视图显示的单元是否正常
     void FPSCount();//FPS计算
-    void takePicture();//获取选区或屏幕照片
-    void drawBaseUnits();//绘制一个基础单元格
+    void drawBaseUnits();//绘制所有基础单元格
+    void drawBaseUnits(int left, int top, int mWidth, int mHeight, QImage &picture);
     void drawReferenceLine();//绘制参考线
     void drawSelectBox();//绘制选框
     void drawFPSText();//绘制FPS数据
 
     const MatrixModel &model;
-    const unsigned &MODELSIZE;
+    const int MODELSIZE;
     //绘制的矩阵与客户区坐标偏移量
     int viewOffsetX;
     int viewOffsetY;
     //视图与模型坐标偏移量
-    unsigned modelOffsetX;
-    unsigned modelOffsetY;
+    int modelOffsetX;
+    int modelOffsetY;
     //单元在视图中的行列
-    unsigned viewColumn;
-    unsigned viewRow;
+    int viewColumn;
+    int viewRow;
     //缩放级别组
-    array<const unsigned, 7> zoomList;
+    array<const int, 7> zoomList;
     array<const QColor, 4> lineColor;
-    unsigned unitSize;	//基础单位大小（px）
+    int unitSize;	//基础单位大小（px）
 
     //一些开关
     bool unitsDspl;	//绘制模型单元
@@ -65,8 +69,6 @@ private:
 
     QRect selectedUnitRect;	//选框
     QImage unitImage;			//模型单元图像
-    unsigned char *ppix;	//图像像素首指针
-    unsigned imageWidth;	//图像宽度
 
     //fps计算
     double fpsCount;
@@ -109,12 +111,17 @@ namespace MatrixColor
     const QColor SELECT(0, 255, 255);	//Cyan
 }
 
-inline void MatrixView::moveToCoordinate(unsigned column, unsigned row)
+inline void MatrixView::moveToCoordinate(int column, int row)
 {
-    modelOffsetX = column - viewColumn/2;
-    modelOffsetY = row - viewRow/2;
+    modelOffsetX = column;
+    modelOffsetY = row;
 
     moveViewCheckup();
+}
+
+inline void MatrixView::moveToCoordinate()
+{
+    moveToCoordinate(MODELSIZE/2, MODELSIZE/2);
 }
 
 inline void MatrixView::selectUnits(QRect selectBox)
@@ -122,33 +129,19 @@ inline void MatrixView::selectUnits(QRect selectBox)
     selectedUnitRect = selectBox;
 }
 
-inline MPoint MatrixView::inView(QPoint clicktedPos) const
-{
-    MPoint cdt {false,0,0,0,0,clicktedPos};
-    int viewX = clicktedPos.x() - viewOffsetX;
-    int viewY = clicktedPos.y() - viewOffsetY;
-
-    if(viewX >= 0 && viewY >= 0)
-    {
-        cdt.viewX = static_cast<unsigned>(viewX);
-        cdt.viewY = static_cast<unsigned>(viewY);
-
-        if(cdt.viewX < viewColumn * unitSize && cdt.viewY < viewRow * unitSize)
-        {
-            cdt.valid = true;
-            cdt.modelColumn = cdt.viewX / unitSize + modelOffsetX;
-            cdt.modelRow = cdt.viewY / unitSize + modelOffsetY;
-
-            return cdt;
-        }
-    }
-
-    return cdt;
-}
-
 inline void MatrixView::noRedrawUnits()
 {
     unitsDspl = false;
+}
+
+inline QPoint MatrixView::getViewOffsetPoint() const
+{
+    return QPoint(viewOffsetX, viewOffsetY);
+}
+
+inline QRect MatrixView::getSelectRect() const
+{
+    return selectedUnitRect;
 }
 
 inline void MatrixView::drawSelectBox()
@@ -176,20 +169,25 @@ inline void MatrixView::moveViewCheckup()
     //检查模型单元显示
     if(modelOffsetX + viewColumn > MODELSIZE)
         modelOffsetX = MODELSIZE - viewColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
+    else if(modelOffsetX < 0)
+        modelOffsetX = 0;
+
     if(modelOffsetY + viewRow > MODELSIZE)
         modelOffsetY = MODELSIZE - viewRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
+    else if(modelOffsetY < 0)
+        modelOffsetY = 0;
 }
 
-inline void MatrixView::translationView(unsigned top, unsigned bottom, unsigned left, unsigned right)
+inline void MatrixView::translationView(int horizontal, int vertical)
 {
-    if(top != 0 && modelOffsetY != 0)
-        modelOffsetY -= top;
-    if(bottom != 0 && modelOffsetY <= MODELSIZE - viewRow)
-        modelOffsetY += bottom;
-    if(left != 0 && modelOffsetX != 0)
-        modelOffsetX -= left;
-    if(right != 0 && modelOffsetX <= MODELSIZE - viewColumn)
-        modelOffsetX += right;
+    if(horizontal)
+    {
+        modelOffsetX += horizontal;
+    }
+    if(vertical)
+    {
+        modelOffsetY += vertical;
+    }
 
     moveViewCheckup();
 }
@@ -210,5 +208,9 @@ inline void MatrixView::fpsOnOff()
     frameSum = 0;
 }
 
+inline void MatrixView::drawBaseUnits()
+{
+    drawBaseUnits(0, 0, viewColumn, viewRow, unitImage);
+}
 
 #endif // MATRIXVIEW_H

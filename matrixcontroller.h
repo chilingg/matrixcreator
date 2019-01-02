@@ -33,11 +33,11 @@ private:
     MatrixModel model;
     MatrixView view;
     bool modelResume;
-    bool viewResume;
+    //bool viewResume;
 
     QPoint moveViewPos;
-    QPoint clickedPos;
-    QRect selectRect;
+    MPoint clickedPos;
+    int defaultValue;
 
     CursorTool cursorTool;
     CursorTool lastCursorTool;
@@ -48,10 +48,9 @@ private:
 
 inline void MatrixController::clearSelectBox()
 {
-    if(selectRect.isValid())
+    if(view.getSelectRect().isValid())
     {
-        selectRect = QRect();
-        view.selectUnits(selectRect);
+        view.selectUnits(QRect());
     }
 }
 
