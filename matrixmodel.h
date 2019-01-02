@@ -75,8 +75,8 @@ inline int MatrixModel::getUnitValue(MatrixSize x, MatrixSize y) const
 {
 #ifndef M_NO_DEBUG
     if(x > modelSize || y > modelSize)
-        qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                 << "error: Index out of range!";
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "error: Index out of range!" ;
 #endif
 
     return currentModel[x+y*modelSize];
@@ -91,7 +91,7 @@ inline void MatrixModel::changeModelValue(MatrixSize x, MatrixSize y, int value)
 {
 #ifndef M_NO_DEBUG
     if(x > modelSize || y > modelSize)
-        qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                  << "error: Index out of range!";
 #endif
 

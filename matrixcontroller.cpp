@@ -1,8 +1,12 @@
 #include "matrixcontroller.h"
 
+#ifndef M_NO_DEBUG
+#include <QDebug>
+#endif
+
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
-    model(2048, MatrixModel::LifeGameT),
+    model(2000, MatrixModel::LifeGameT),
     view(model, this),
     modelResume(false),
     moveViewPos(),
@@ -10,9 +14,9 @@ MatrixController::MatrixController(QWidget *parent):
     defaultValue(1),
     cursorTool(POINT),
     lastCursorTool(cursorTool),
-    circleCursor(QPixmap(":/cursor/circleSelect"), 0, 0),
-    pointCursor(QPixmap(":/cursor/pointSelect"), 0, 0),
-    translateCursor(QPixmap(":/cursor/zoomView"), 8, 8)
+    circleCursor(QPixmap(":/cursor/circle"), 0, 0),
+    pointCursor(QPixmap(":/cursor/point"), 0, 0),
+    translateCursor(QPixmap(":/cursor/translate"), 8, 8)
 {
     setWindowTitle(tr("MatrixCreator"));
     resize(840, 720);//默认大小

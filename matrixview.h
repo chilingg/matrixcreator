@@ -3,13 +3,13 @@
 
 #include "matrixmodel.h"
 #include "mpoint.h"
-#include <QMainWindow>
+#include <QWidget>
 #include <QPainter>
 #include <array>
 
 using std::array;
 
-class MatrixView : public QMainWindow
+class MatrixView : public QWidget
 {
     Q_OBJECT
 
@@ -41,9 +41,9 @@ private:
     void FPSCount();//FPS计算
     void drawBaseUnits();//绘制所有基础单元格
     void drawBaseUnits(int left, int top, int mWidth, int mHeight, QImage &picture);
-    void drawReferenceLine();//绘制参考线
-    void drawSelectBox();//绘制选框
-    void drawFPSText();//绘制FPS数据
+    void drawReferenceLine(QPainter &painter);//绘制参考线
+    void drawSelectBox(QPainter &painter);//绘制选框
+    void drawFPSText(QPainter &painter);//绘制FPS数据
 
     const MatrixModel &model;
     const int MODELSIZE;
@@ -74,8 +74,6 @@ private:
     double fpsCount;
     unsigned frameSum;
     QTime fpsTime;
-
-    QPainter painter;
 
 signals:
 
@@ -144,7 +142,7 @@ inline QRect MatrixView::getSelectRect() const
     return selectedUnitRect;
 }
 
-inline void MatrixView::drawSelectBox()
+inline void MatrixView::drawSelectBox(QPainter &painter)
 {
     painter.setPen(MatrixColor::SELECT);
     painter.drawRect(selectedUnitRect);

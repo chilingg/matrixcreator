@@ -1,8 +1,8 @@
 #include "matrixview.h"
-//#include <QPalette>
+#include <QDebug>
 
 MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
-    QMainWindow(parent),
+    QWidget(parent),
     model(m),
     MODELSIZE(static_cast<int>(m.getModelSize())),
     viewOffsetX(0),
@@ -27,7 +27,7 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     unitImage(),
     fpsCount(0),
     frameSum(0),
-    painter(this)
+    fpsTime()
 {
     //设置窗口背景色
     QPalette pal(palette());
@@ -49,7 +49,7 @@ MPoint MatrixView::inView(QPoint clicktedPos) const
     int viewY = clicktedPos.y() - viewOffsetY;
     viewY -= viewY % unitSize;
 
-    if(viewX >= 0 && viewColumn * unitSize && viewY >= 0 && viewY < viewRow * unitSize)
+    if(viewX >= 0 && viewX <  viewColumn * unitSize && viewY >= 0 && viewY < viewRow * unitSize)
     {
         cdt.valid = true;
             cdt.modelColumn = viewX / unitSize + modelOffsetX;
@@ -129,6 +129,8 @@ void MatrixView::resizeEvent(QResizeEvent *)
 
 void MatrixView::paintEvent(QPaintEvent *)
 {
+    QPainter painter(this);
+
     //添加坐标偏移，使视图居中于窗口
     painter.setWindow(-viewOffsetX, -viewOffsetY, width(), height());
 
@@ -139,17 +141,17 @@ void MatrixView::paintEvent(QPaintEvent *)
     painter.drawImage(0, 0, unitImage);//图像绘制到视图
 
     if(rflDspl && unitSize != zoomList[0])
-        drawReferenceLine();
+        drawReferenceLine(painter);
 
     if(selectedUnitRect.isValid()) //绘制选框
-        drawSelectBox();
+        drawSelectBox(painter);
 
     if(fpsDspl)
     {
-        frameSum++;
+        ++frameSum;
         //sum和fps在fpsThread中修改
         FPSCount();
-        drawFPSText();
+        drawFPSText(painter);
     }
 }
 
@@ -233,7 +235,7 @@ void MatrixView::drawBaseUnits(int left, int top, int mWidth, int mHeight, QImag
     }
 }
 
-void MatrixView::drawReferenceLine()
+void MatrixView::drawReferenceLine(QPainter &painter)
 {
     unsigned level;//参考线明度等级
     level = unitSize < 8 ? 0 : 1;
@@ -269,7 +271,7 @@ void MatrixView::drawReferenceLine()
     ++level;
 }
 
-void MatrixView::drawFPSText()
+void MatrixView::drawFPSText(QPainter &painter)
 {
     QPoint point(-viewOffsetX + 10, -viewOffsetY + 15);
 

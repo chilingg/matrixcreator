@@ -22,7 +22,7 @@ void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, Matrix
 {
 #ifndef M_NO_DEBUG
     if(x+widht-1 > modelSize || y+height-1 > modelSize)
-        qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                  << "error: Index out of range!";
 #endif
 
@@ -104,7 +104,7 @@ void MatrixModel::LFTransferModelThread()
     }
 #ifndef M_NO_DEBUG
     if(debug != modelSize)
-        qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                  << "Thread runs:" << modelSize - debug;
     debug = 0;
 #endif
@@ -156,7 +156,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
             break;
         default:
 #ifndef M_NO_DEBUG
-            qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                      << "AroundValue Over range!" << aroundValue ;
 #endif
             break;
@@ -176,7 +176,7 @@ void MatrixModel::startTransfer()
 
 #ifndef M_NO_DEBUG
         if(line != 0)
-            qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                      << "Overflow line" << line;
 #endif
 }
@@ -234,7 +234,7 @@ void MatrixModel::LFCalculusModelThread()
     }
 #ifndef M_NO_DEBUG
     if(debug != modelSize)
-        qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                  << "Thread runs:" << modelSize - debug;
     debug = 0;
 #endif
@@ -250,7 +250,7 @@ void MatrixModel::LFCalculusModelThread()
     }
 #ifndef M_NO_DEBUG
     if(debug != modelSize)
-        qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                  << "Thread runs:" << modelSize - debug
                  << modelSize * (modelSize+1) / 2 - debugValue;
     debug = 0;
@@ -308,7 +308,7 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
 
 #ifndef M_NO_DEBUG
         if(tempModel[line+y*modelSize] > 18)
-            qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                      << "Unclear!" << line << y << tempModel[line+y*modelSize];
 #endif
         changeMutex.unlock();
@@ -380,7 +380,7 @@ void MatrixModel::startCalculus1()
 
 #ifndef M_NO_DEBUG
         if(line != 0)
-            qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                      << "Overflow line" << line;
 #endif
 }
@@ -397,7 +397,7 @@ void MatrixModel::startCalculus2()
 
 #ifndef M_NO_DEBUG
         if(line != 0)
-            qDebug() << "log in " << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                      << "Overflow line" << line;
 #endif
 }
