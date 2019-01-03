@@ -1,5 +1,4 @@
 #include "matrixview.h"
-#include <QDebug>
 
 MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     QWidget(parent),
@@ -23,7 +22,7 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     gridDspl(true),
     rflDspl(true),
     fpsDspl(true),
-    selectedUnitRect(),
+    selectedViewRect(),
     unitImage(),
     fpsCount(0),
     frameSum(0),
@@ -65,7 +64,7 @@ void MatrixView::zoomView(MPoint cdt, MatrixView::Zoom zoom)
 {
     //获取当前缩放级别
     size_t level = 0;
-    while(level < zoomList.size() && zoomList[level] >= unitSize)
+    while(level < zoomList.size() && zoomList[level] < unitSize)
     {
         ++level;
     }
@@ -102,16 +101,16 @@ void MatrixView::takePicture(QString path)
     static short sum = 0;
     QDateTime currentTime = QDateTime::currentDateTime();
 
-    if(selectedUnitRect.isValid())
+    if(selectedViewRect.isValid())
     {
-        QImage picture(selectedUnitRect.width(), selectedUnitRect.height(), QImage::Format_RGB32);
+        QImage picture(selectedViewRect.width(), selectedViewRect.height(), QImage::Format_RGB32);
         picture.fill(MatrixColor::LUMINOSITY_1_17);
 
         //绘制模型图像
-        int modelLeft = selectedUnitRect.left() / unitSize;
-        int modelTop = selectedUnitRect.top() / unitSize;
-        int modelWidth = selectedUnitRect.width() / unitSize;
-        int modelHeight = selectedUnitRect.height() / unitSize;
+        int modelLeft = selectedViewRect.left() / unitSize;
+        int modelTop = selectedViewRect.top() / unitSize;
+        int modelWidth = selectedViewRect.width() / unitSize;
+        int modelHeight = selectedViewRect.height() / unitSize;
         drawBaseUnits(modelLeft, modelTop, modelWidth, modelHeight, picture);
 
         picture.save(path + currentTime.toString("yyyyMMddhhmm-ss%1.png").arg(sum), "PNG");
@@ -124,7 +123,23 @@ void MatrixView::takePicture(QString path)
 
 void MatrixView::resizeEvent(QResizeEvent *)
 {
+    int oldColumn = viewColumn;
+    int oldRow = viewRow;
+
     updateViewSize();
+
+    //行列变动时保持模型单元中心不变
+    if(viewColumn != oldColumn)
+    {
+        modelOffsetX += oldColumn/2;
+        modelOffsetX -= viewColumn/2;
+    }
+    if(viewRow != oldRow)
+    {
+        modelOffsetY += oldRow/2;
+        modelOffsetY -= viewRow/2;
+    }
+    moveViewCheckup();
 }
 
 void MatrixView::paintEvent(QPaintEvent *)
@@ -143,7 +158,7 @@ void MatrixView::paintEvent(QPaintEvent *)
     if(rflDspl && unitSize != zoomList[0])
         drawReferenceLine(painter);
 
-    if(selectedUnitRect.isValid()) //绘制选框
+    if(selectedViewRect.isValid()) //绘制选框
         drawSelectBox(painter);
 
     if(fpsDspl)
@@ -157,9 +172,6 @@ void MatrixView::paintEvent(QPaintEvent *)
 
 void MatrixView::updateViewSize()
 {
-    int oldColumn = viewColumn;
-    int oldRow = viewRow;
-
     //计算视图显示的单元行列
     viewColumn = width() / unitSize;
     viewRow = height() / unitSize;
@@ -169,17 +181,6 @@ void MatrixView::updateViewSize()
     if(viewRow > MODELSIZE)
         viewRow = MODELSIZE;
 
-    //行列变动时保持模型单元中心不变
-    if(viewColumn != oldColumn)
-    {
-        modelOffsetX += oldColumn/2;
-        modelOffsetX -= viewColumn/2;
-    }
-    else if(viewRow != oldRow)
-    {
-        modelOffsetY += oldRow/2;
-        modelOffsetY -= viewRow/2;
-    }
     moveViewCheckup();
 
     //计算视图偏移量
@@ -221,9 +222,9 @@ void MatrixView::drawBaseUnits(int left, int top, int mWidth, int mHeight, QImag
 
             int x = i * unitSize * 4;
             int y = j * unitSize * 4;
-            for(int k = x + interval; i < x + (unitSize*4); i += 4)
+            for(int k = x + interval; k < x + (unitSize*4); k += 4)
             {
-                for(int l = y + interval; j < y + (unitSize*4); j += 4)
+                for(int l = y + interval; l < y + (unitSize*4); l += 4)
                 {
                     //image.setPixel(i, j, color); //以一个个像素点绘制基础单元
                     *(pp + k + l*pWidht) = b; //B
@@ -291,7 +292,6 @@ void MatrixView::drawFPSText(QPainter &painter)
                 QPixmap(":/texts/9"),
     };
 
-    painter.setPen(QColor(MatrixColor::WARNING));
     painter.drawPixmap(point,fpsText);
     point.setX(point.x() + fpsText.width());
 

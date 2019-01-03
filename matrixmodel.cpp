@@ -116,7 +116,9 @@ void MatrixModel::LFTransferModelThread()
 void MatrixModel::transferModelLine(MatrixSize line)
 {
 #ifndef M_NO_DEBUG
+    changeMutex.lock();
     ++debug;
+    changeMutex.unlock();
 #endif
 
     for(MatrixSize j = 0; j < modelSize; ++j)
@@ -207,7 +209,7 @@ int MatrixModel::getAroundValue(MatrixSize x, MatrixSize y)
     MatrixSize around_9X = x != modelSize - 1 ? x + 1 : 0;
     MatrixSize around_9Y = y != modelSize - 1 ? y + 1 : 0;
 
-    int aroundValue = currentModel[around_1X+around_1Y*modelSize*modelSize]
+    int aroundValue = currentModel[around_1X+around_1Y*modelSize]
             + currentModel[around_2X+around_2Y*modelSize]
             + currentModel[around_3X+around_3Y*modelSize]
             + currentModel[around_4X+around_4Y*modelSize]

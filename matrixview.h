@@ -7,6 +7,10 @@
 #include <QPainter>
 #include <array>
 
+#ifndef M_NO_DEBUG
+#include <QDebug>
+#endif
+
 using std::array;
 
 class MatrixView : public QWidget
@@ -28,7 +32,8 @@ public:
     void noRedrawUnits();//不重绘单元视图
     void takePicture(QString path);//获取选区或屏幕照片
     QPoint getViewOffsetPoint() const;
-    QRect getSelectRect() const;
+    QRect getSelectViewRect() const;
+    QRect getSelectUnitRect() const;
     MPoint inView(QPoint clicktedPos) const;//查看点击坐标是否发生在视图中
 
 protected:
@@ -67,7 +72,7 @@ private:
     bool rflDspl; 	//绘制网格参考线
     bool fpsDspl;		//fps显示
 
-    QRect selectedUnitRect;	//选框
+    QRect selectedViewRect;	//选框
     QImage unitImage;			//模型单元图像
 
     //fps计算
@@ -124,7 +129,7 @@ inline void MatrixView::moveToCoordinate()
 
 inline void MatrixView::selectUnits(QRect selectBox)
 {
-    selectedUnitRect = selectBox;
+    selectedViewRect = selectBox;
 }
 
 inline void MatrixView::noRedrawUnits()
@@ -137,15 +142,21 @@ inline QPoint MatrixView::getViewOffsetPoint() const
     return QPoint(viewOffsetX, viewOffsetY);
 }
 
-inline QRect MatrixView::getSelectRect() const
+inline QRect MatrixView::getSelectViewRect() const
 {
-    return selectedUnitRect;
+    return selectedViewRect;
+}
+
+inline QRect MatrixView::getSelectUnitRect() const
+{
+    return QRect(selectedViewRect.topLeft()/unitSize + QPoint(modelOffsetX,modelOffsetY),
+                 selectedViewRect.size()/unitSize);
 }
 
 inline void MatrixView::drawSelectBox(QPainter &painter)
 {
     painter.setPen(MatrixColor::SELECT);
-    painter.drawRect(selectedUnitRect);
+    painter.drawRect(selectedViewRect);
 }
 
 inline void MatrixView::FPSCount()
@@ -198,6 +209,13 @@ inline void MatrixView::referenceLineOnOff()
 inline void MatrixView::gridOnOff()
 {
     gridDspl = !gridDspl;
+
+    //显示网格需要重绘单元图像
+    if(gridDspl)
+    {
+        unitImage = QImage(viewColumn * unitSize, viewRow * unitSize, QImage::Format_RGB32);
+        unitImage.fill(MatrixColor::LUMINOSITY_1_17);
+    }
 }
 
 inline void MatrixView::fpsOnOff()

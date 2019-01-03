@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/text">
+    <qresource prefix="/texts">
         <file alias="0">icons/texts/0.png</file>
         <file alias="1">icons/texts/1.png</file>
         <file alias="2">icons/texts/2.png</file>
@@ -10,7 +10,7 @@
         <file alias="7">icons/texts/7.png</file>
         <file alias="8">icons/texts/8.png</file>
         <file alias="9">icons/texts/9.png</file>
-        <file alias="FTP">icons/texts/FPS.png</file>
+        <file alias="FPS">icons/texts/FPS.png</file>
         <file alias="point">icons/texts/point.png</file>
     </qresource>
     <qresource prefix="/cursor">

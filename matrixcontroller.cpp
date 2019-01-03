@@ -1,19 +1,16 @@
 #include "matrixcontroller.h"
 
-#ifndef M_NO_DEBUG
-#include <QDebug>
-#endif
-
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
-    model(2000, MatrixModel::LifeGameT),
+    model(4000, MatrixModel::LifeGame),
     view(model, this),
     modelResume(false),
     moveViewPos(),
+    selectPos(),
     clickedPos{false,0,0,QPoint(),QRect()},
     defaultValue(1),
     cursorTool(POINT),
-    lastCursorTool(cursorTool),
+    lastCursorTool(CIRCLE),
     circleCursor(QPixmap(":/cursor/circle"), 0, 0),
     pointCursor(QPixmap(":/cursor/point"), 0, 0),
     translateCursor(QPixmap(":/cursor/translate"), 8, 8)
@@ -63,7 +60,8 @@ void MatrixController::mousePressEvent(QMouseEvent *event)
             }
             else if(cursorTool == CIRCLE && !modelResume)//框选
             {
-                view.selectUnits(viewPos.viewRect);
+                selectPos = viewPos.viewRect;
+                view.selectUnits(selectPos);
                 view.update();
                 return;
             }
@@ -82,7 +80,7 @@ void MatrixController::mouseMoveEvent(QMouseEvent *event)
 {
     MPoint viewPos = view.inView(event->pos());
 
-    if(!viewPos.valid)
+    if(viewPos.valid)
     {
         if(event->buttons() == Qt::MiddleButton)
         {
@@ -103,7 +101,7 @@ void MatrixController::mouseMoveEvent(QMouseEvent *event)
             }
             if(viewPos.modelRow != beforePos.modelRow)//Vertical
             {
-                view.translationView(beforePos.modelRow - viewPos.modelRow, 0);
+                view.translationView(0, beforePos.modelRow - viewPos.modelRow);
                 moveViewPos.setY(viewPos.clickted.y());
             }
 
@@ -140,8 +138,9 @@ void MatrixController::mouseMoveEvent(QMouseEvent *event)
             }
             else if(cursorTool == CIRCLE && modelResume == false)
             {
-                QRect beforeRect = view.getSelectRect();//起始点
+                QRect beforeRect = selectPos;//起始点
 
+                //视图外移动进来
                 if(beforeRect.isEmpty())
                 {
                     view.selectUnits(viewPos.viewRect);
@@ -179,7 +178,7 @@ void MatrixController::mouseMoveEvent(QMouseEvent *event)
                     return;
                 }
 
-                if(clickedPos.modelRow != viewPos.modelRow &&
+                if(clickedPos.modelRow != viewPos.modelRow ||
                         clickedPos.modelColumn != viewPos.modelColumn)
                 {
                     model.changeModelValue(viewPos.modelColumn, viewPos.modelRow, defaultValue);
@@ -216,6 +215,7 @@ void MatrixController::mouseReleaseEvent(QMouseEvent *event)
     {
         moveViewPos = QPoint();
         clickedPos.valid = false;
+        selectPos = QRect();
     }
 }
 
@@ -258,39 +258,18 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         view.update();
         return;
     }
+    //Z 平移工具
+    if(event->key() == Qt::Key_Z)
+    {
+        lastCursorTool = cursorTool;
+        cursorTool = TRANSLATE;
+        setCursor(translateCursor);
+        return;
+    }
     //空格 开始暂停
     if(event->key() == Qt::Key_Space)
     {
         clearSelectBox();
-        //模型运行中时会切换成平移工具，暂停时切换回来
-        if(modelResume)
-        {
-            CursorTool temp = lastCursorTool;
-            lastCursorTool = cursorTool;
-            cursorTool = temp;
-
-            switch (cursorTool)
-            {
-            case POINT:
-                setCursor(pointCursor);
-                break;
-            case CIRCLE:
-                setCursor(circleCursor);
-                break;
-            case TRANSLATE:
-                setCursor(translateCursor);
-                break;
-            default:
-                break;
-            }
-        }
-        else if(cursorTool != TRANSLATE)
-        {
-            lastCursorTool = cursorTool;
-            cursorTool = TRANSLATE;
-            setCursor(translateCursor);
-        }
-
         modelResume = !modelResume;
         return;
     }
@@ -300,10 +279,10 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         return;
 
     //键盘事件发生时，先处理选择对象
-    if (view.getSelectRect().isValid())
+    if (view.getSelectViewRect().isValid())
     {
         //shift+F5 填充默认值
-        QRect selectArea = view.getSelectRect();
+        QRect selectArea = view.getSelectUnitRect();
         if(event->modifiers() == Qt::ShiftModifier && event->key() == Qt::Key_F5)
         {
             for(int i = selectArea.left(); i <= selectArea.right(); ++i)
@@ -331,7 +310,6 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     {
         view.selectUnits(QRect());//之后清除选框
         view.update();
-        return;
     }
 
     //ctrl 暂切选择工具
@@ -362,6 +340,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         lastCursorTool = cursorTool;
         cursorTool = POINT;
         setCursor(pointCursor);
+        return;
     }
     //V 框选工具
     if(event->key() == Qt::Key_V)
@@ -369,18 +348,13 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         lastCursorTool = cursorTool;
         cursorTool = CIRCLE;
         setCursor(circleCursor);
-    }
-    //Z 平移工具
-    if(event->key() == Qt::Key_Z)
-    {
-        lastCursorTool = cursorTool;
-        cursorTool = TRANSLATE;
-        setCursor(translateCursor);
+        return;
     }
     //X 交换两个默认值
     if(event->key() == Qt::Key_X)
     {
         defaultValue = !defaultValue;
+        return;
     }
     //ctrl+delete 清除全部
     if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Delete)
@@ -464,6 +438,7 @@ void MatrixController::wheelEvent(QWheelEvent *event)
             QPoint offset = event->globalPos() - event->pos() + view.getViewOffsetPoint();
             cursor().setPos(unitCtrPos + offset);
         }
+        view.update();
     }
     else
     {

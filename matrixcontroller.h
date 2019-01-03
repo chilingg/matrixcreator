@@ -10,6 +10,10 @@
 #include <QWheelEvent>
 #include <QCursor>
 
+#ifndef M_NO_DEBUG
+#include <QDebug>
+#endif
+
 class MatrixController : public QMainWindow
 {
     Q_OBJECT
@@ -33,9 +37,9 @@ private:
     MatrixModel model;
     MatrixView view;
     bool modelResume;
-    //bool viewResume;
 
     QPoint moveViewPos;
+    QRect selectPos;
     MPoint clickedPos;
     int defaultValue;
 
@@ -48,7 +52,7 @@ private:
 
 inline void MatrixController::clearSelectBox()
 {
-    if(view.getSelectRect().isValid())
+    if(view.getSelectViewRect().isValid())
     {
         view.selectUnits(QRect());
     }
