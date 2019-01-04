@@ -3,18 +3,28 @@
 MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     THREADS(std::thread::hardware_concurrency()),
     future(THREADS),	//获取cpu核数
-    currentModel(new int[size*size]),
+    currentModel(new int*[size]),
     modelPattern(EmptyPattern),
     modelSize(size),
     updateStatus(false),
     updateLine(0)
 {
+    for(size_t i =0; i < modelSize; ++i)
+    {
+        currentModel[i] = new int[modelSize];
+    }
+    clearAllUnit();
+
     modelPattern = switchModel(pattern);
 }
 
 MatrixModel::~MatrixModel()
 {
     switchModel(EmptyPattern);
+    for(size_t i =0; i < modelSize; ++i)
+    {
+        delete [] currentModel[i];
+    }
     delete [] currentModel;
 }
 
@@ -30,7 +40,7 @@ void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, Matrix
     {
         for(MatrixSize j = 0; j < height; ++j)
         {
-            currentModel[x+i + (y+j)*modelSize] = 0;
+            currentModel[x+i][y+j] = 0;
         }
     }
 }
@@ -45,10 +55,18 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     //结束之前的模式
     switch (modelPattern) {
     case LifeGameT:
-        delete []  tempModel;
+        for(size_t i =0; i < modelSize; ++i)
+        {
+            delete [] tempModel[i];
+        }
+        delete [] tempModel;
         break;
     case LifeGame:
-        delete []  tempModel;
+        for(size_t i =0; i < modelSize; ++i)
+        {
+            delete [] tempModel[i];
+        }
+        delete [] tempModel;
         break;
     default:
         break;
@@ -57,11 +75,33 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     //开始新的模式
     switch (after) {
     case LifeGameT:
-        tempModel = new int[modelSize*modelSize];
+        tempModel = new int*[modelSize];
+        for(size_t i =0; i < modelSize; ++i)
+        {
+            tempModel[i] = new int[modelSize];
+        }
+        for(MatrixSize i = 0; i < modelSize; ++i)
+        {
+            for(MatrixSize j = 0; j < modelSize; ++j)
+            {
+                tempModel[i][j] = 0;
+            }
+        }
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
     case LifeGame:
-        tempModel = new int[modelSize*modelSize];
+        tempModel = new int*[modelSize];
+        for(size_t i =0; i < modelSize; ++i)
+        {
+            tempModel[i] = new int[modelSize];
+        }
+        for(MatrixSize i = 0; i < modelSize; ++i)
+        {
+            for(MatrixSize j = 0; j < modelSize; ++j)
+            {
+                tempModel[i][j] = 0;
+            }
+        }
         updateModel = &MatrixModel::LFCalculusModelThread;
         break;
     default:
@@ -110,7 +150,7 @@ void MatrixModel::LFTransferModelThread()
 #endif
 
     //把current指向新模型，temp指向旧模型
-    int *temp = currentModel;
+    int **temp = currentModel;
     currentModel = tempModel;
     tempModel = temp;
 }
@@ -128,7 +168,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
         int aroundValue = getAroundValue(line, j);
 
         //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
-        tempModel[line+j*modelSize] = currentModel[line+j*modelSize];
+        tempModel[line][j] = currentModel[line][j];
         switch (aroundValue)
         {
         case 0:
@@ -136,7 +176,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
         case 2:
             break;
         case 3:
-            tempModel[line+j*modelSize] = 1;
+            tempModel[line][j] = 1;
             break;
         case 4:
         case 5:
@@ -146,7 +186,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
             break;
         case 10:
         case 11:
-            tempModel[line+j*modelSize] = 0;
+            tempModel[line][j] = 0;
             break;
         case 12:
         case 13:
@@ -156,7 +196,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
         case 16:
         case 17:
         case 18:
-            tempModel[line+j*modelSize] = 0;
+            tempModel[line][j] = 0;
             break;
         default:
 #ifndef M_NO_DEBUG
@@ -211,16 +251,16 @@ int MatrixModel::getAroundValue(MatrixSize x, MatrixSize y)
     MatrixSize around_9X = x != modelSize - 1 ? x + 1 : 0;
     MatrixSize around_9Y = y != modelSize - 1 ? y + 1 : 0;
 
-    int aroundValue = currentModel[around_1X+around_1Y*modelSize]
-            + currentModel[around_2X+around_2Y*modelSize]
-            + currentModel[around_3X+around_3Y*modelSize]
-            + currentModel[around_4X+around_4Y*modelSize]
-            + currentModel[around_6X+around_6Y*modelSize]
-            + currentModel[around_7X+around_7Y*modelSize]
-            + currentModel[around_8X+around_8Y*modelSize]
-            + currentModel[around_9X+around_9Y*modelSize];
+    int aroundValue = currentModel[around_1X][around_1Y]
+            + currentModel[around_2X][around_2Y]
+            + currentModel[around_3X][around_3Y]
+            + currentModel[around_4X][around_4Y]
+            + currentModel[around_6X][around_6Y]
+            + currentModel[around_7X][around_7Y]
+            + currentModel[around_8X][around_8Y]
+            + currentModel[around_9X][around_9Y];
 
-    aroundValue += currentModel[x+y*modelSize] == 0 ? 0 : 10;//大于8表示自身有值
+    aroundValue += currentModel[x][y] == 0 ? 0 : 10;//大于8表示自身有值
 
     return aroundValue;
 }
@@ -272,7 +312,7 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
 
     for(MatrixSize y = 0; y < modelSize; ++y)
     {
-        if(currentModel[line+y*modelSize] == 0)
+        if(currentModel[line][y] == 0)
             continue;
 
         MatrixSize around_1X = line != 0 ? line - 1 : modelSize - 1;
@@ -300,20 +340,20 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
         MatrixSize around_9Y = y != modelSize - 1 ? y + 1 : 0;
 
         changeMutex.lock();
-        tempModel[around_1X+around_1Y*modelSize] += 1;
-        tempModel[around_2X+around_2Y*modelSize] += 1;
-        tempModel[around_3X+around_3Y*modelSize] += 1;
-        tempModel[around_4X+around_4Y*modelSize] += 1;
-        tempModel[line+y*modelSize] += 10; //值大于等于10则表示对应current有值
-        tempModel[around_6X+around_6Y*modelSize] += 1;
-        tempModel[around_7X+around_7Y*modelSize] += 1;
-        tempModel[around_8X+around_8Y*modelSize] += 1;
-        tempModel[around_9X+around_9Y*modelSize] += 1;
+        tempModel[around_1X][around_1Y] += 1;
+        tempModel[around_2X][around_2Y] += 1;
+        tempModel[around_3X][around_3Y] += 1;
+        tempModel[around_4X][around_4Y] += 1;
+        tempModel[line][y] += 10; //值大于等于10则表示对应current有值
+        tempModel[around_6X][around_6Y] += 1;
+        tempModel[around_7X][around_7Y] += 1;
+        tempModel[around_8X][around_8Y] += 1;
+        tempModel[around_9X][around_9Y] += 1;
 
 #ifndef M_NO_DEBUG
-        if(tempModel[line+y*modelSize] > 18)
+        if(tempModel[line][y] > 18)
             qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "Unclear!" << line << y << tempModel[line+y*modelSize];
+                     << "Unclear!" << line << y << tempModel[line][y];
 #endif
         changeMutex.unlock();
     }
@@ -330,14 +370,14 @@ void MatrixModel::calculusModelLine(MatrixSize line)
 
     for(MatrixSize y = 0; y < modelSize; ++y)
     {
-        switch (tempModel[line+y*modelSize])
+        switch (tempModel[line][y])
         {
         case 0:
         case 1:
         case 2:
             break;
         case 3:
-            currentModel[line+y*modelSize] = 1;
+            currentModel[line][y] = 1;
             break;
         case 4:
         case 5:
@@ -347,7 +387,7 @@ void MatrixModel::calculusModelLine(MatrixSize line)
             break;
         case 10:
         case 11:
-            currentModel[line+y*modelSize] = 0;
+            currentModel[line][y] = 0;
             break;
         case 12:
         case 13:
@@ -357,18 +397,18 @@ void MatrixModel::calculusModelLine(MatrixSize line)
         case 16:
         case 17:
         case 18:
-            currentModel[line+y*modelSize] = 0;
+            currentModel[line][y] = 0;
             break;
 
         default:
 #ifndef M_NO_DEBUG
-            qDebug() << "Value Error!" << line << y << tempModel[line+y*modelSize];
-            currentModel[line+y*modelSize] = 2;
+            qDebug() << "Value Error!" << line << y << tempModel[line][y];
+            currentModel[line][y] = 2;
 #endif
             break;
         }
 
-        tempModel[line+y*modelSize] = 0;
+        tempModel[line][y] = 0;
     }
 }
 

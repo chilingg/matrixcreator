@@ -43,7 +43,7 @@ private:
     void transferModelLine(MatrixSize line);//使用Transfer一次更新一行
     void startTransfer();//送进线程中的控制函数
     int getAroundValue(MatrixSize x, MatrixSize y);
-    int *tempModel;
+    int **tempModel;
 
     //LifeGame模型演变Calculus
     //把当前模型对下次更新的影响记录下来，再依据记录修改当前模型
@@ -56,7 +56,7 @@ private:
     unsigned THREADS;
     vector<QFuture<void> > future;
     //vector<int> currentModel;
-    int *currentModel;
+    int **currentModel;
     ModelPattern modelPattern;
     unsigned modelSize;
     
@@ -80,7 +80,7 @@ inline int MatrixModel::getUnitValue(MatrixSize x, MatrixSize y) const
                  << "error: Index out of range!" ;
 #endif
 
-    return currentModel[x+y*modelSize];
+    return currentModel[x][y];
 }
 
 inline unsigned MatrixModel::getModelSize() const
@@ -96,7 +96,7 @@ inline void MatrixModel::changeModelValue(MatrixSize x, MatrixSize y, int value)
                  << "error: Index out of range!";
 #endif
 
-    currentModel[x+y*modelSize] = value;
+    currentModel[x][y] = value;
 }
 
 inline void MatrixModel::beginUpdate()
