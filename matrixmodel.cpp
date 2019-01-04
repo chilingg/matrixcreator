@@ -3,7 +3,7 @@
 MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     THREADS(std::thread::hardware_concurrency()),
     future(THREADS),	//获取cpu核数
-    currentModel(size*size, 0),
+    currentModel(new int[size*size]),
     modelPattern(EmptyPattern),
     modelSize(size),
     updateStatus(false),
@@ -15,7 +15,7 @@ MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
 MatrixModel::~MatrixModel()
 {
     switchModel(EmptyPattern);
-    currentModel.clear();
+    delete [] currentModel;
 }
 
 void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height)
@@ -45,10 +45,10 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     //结束之前的模式
     switch (modelPattern) {
     case LifeGameT:
-        tempModel.clear();
+        delete []  tempModel;
         break;
     case LifeGame:
-        tempModel.clear();
+        delete []  tempModel;
         break;
     default:
         break;
@@ -57,11 +57,11 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     //开始新的模式
     switch (after) {
     case LifeGameT:
-        tempModel.assign(modelSize*modelSize, 0);
+        tempModel = new int[modelSize*modelSize];
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
     case LifeGame:
-        tempModel.assign(modelSize*modelSize, 0);
+        tempModel = new int[modelSize*modelSize];
         updateModel = &MatrixModel::LFCalculusModelThread;
         break;
     default:
@@ -110,7 +110,9 @@ void MatrixModel::LFTransferModelThread()
 #endif
 
     //把current指向新模型，temp指向旧模型
-    swap(currentModel, tempModel);
+    int *temp = currentModel;
+    currentModel = tempModel;
+    tempModel = temp;
 }
 
 void MatrixModel::transferModelLine(MatrixSize line)

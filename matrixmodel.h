@@ -43,7 +43,7 @@ private:
     void transferModelLine(MatrixSize line);//使用Transfer一次更新一行
     void startTransfer();//送进线程中的控制函数
     int getAroundValue(MatrixSize x, MatrixSize y);
-    vector<int> tempModel;
+    int *tempModel;
 
     //LifeGame模型演变Calculus
     //把当前模型对下次更新的影响记录下来，再依据记录修改当前模型
@@ -55,7 +55,8 @@ private:
 
     unsigned THREADS;
     vector<QFuture<void> > future;
-    vector<int> currentModel;
+    //vector<int> currentModel;
+    int *currentModel;
     ModelPattern modelPattern;
     unsigned modelSize;
     
