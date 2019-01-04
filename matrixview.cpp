@@ -113,11 +113,17 @@ void MatrixView::takePicture(QString path)
         int modelHeight = selectedViewRect.height() / unitSize;
         drawBaseUnits(modelLeft, modelTop, modelWidth, modelHeight, picture);
 
-        picture.save(path + currentTime.toString("yyyyMMddhhmm-ss%1.png").arg(sum), "PNG");
+        if(!path.isEmpty())
+            picture.save(currentTime.toString("yyyyMMddhhmm-ss%1.png").arg(++sum), "PNG");
+        else
+            picture.save(path, "PNG");
     }
     else
     {
-        unitImage.save(path + currentTime.toString("yyyyMMddhhmm-ss0%1.png").arg(sum), "PNG");
+        if(!path.isEmpty())
+            unitImage.save(currentTime.toString("yyyyMMddhhmm-ss%1.png").arg(++sum), "PNG");
+        else
+            unitImage.save(path, "PNG");
     }
 }
 

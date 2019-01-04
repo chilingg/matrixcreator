@@ -1,4 +1,5 @@
 #include "matrixcontroller.h"
+#include <QFileDialog>
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
@@ -305,10 +306,24 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         }
     }
 
+    //F12 拍照
+    if(event->key() == Qt::Key_F12)
+    {
+        QString s = QFileDialog::getSaveFileName(this,
+                                                 "Image Save As",
+                                                 "./",
+                                                 "*.png");
+        if(!s.isEmpty())
+            //view.takePicture(s);
+
+        clearSelectBox();
+        return;
+    }
+
     //不是shift键都会清除选框
     if(event->modifiers() != Qt::ShiftModifier)
     {
-        view.selectUnits(QRect());//之后清除选框
+        clearSelectBox();//之后清除选框
         view.update();
     }
 
@@ -375,13 +390,6 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     {
         (model.*(model.updateModel))();
         view.update();
-        return;
-    }
-    //F12 拍照
-    if(event->key() == Qt::Key_F12)
-    {
-
-        //view.takePicture();
         return;
     }
 }
