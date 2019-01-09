@@ -57,16 +57,16 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     case LifeGameT:
         for(size_t i =0; i < modelSize; ++i)
         {
-            delete [] tempModel[i];
+            delete [] tTempModel[i];
         }
-        delete [] tempModel;
+        delete [] tTempModel;
         break;
     case LifeGame:
         for(size_t i =0; i < modelSize; ++i)
         {
-            delete [] tempModel[i];
+            delete [] cTempModel[i];
         }
-        delete [] tempModel;
+        delete [] cTempModel;
         break;
     default:
         break;
@@ -75,31 +75,31 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     //开始新的模式
     switch (after) {
     case LifeGameT:
-        tempModel = new int*[modelSize];
+        tTempModel = new int*[modelSize];
         for(size_t i =0; i < modelSize; ++i)
         {
-            tempModel[i] = new int[modelSize];
+            tTempModel[i] = new int[modelSize];
         }
         for(MatrixSize i = 0; i < modelSize; ++i)
         {
             for(MatrixSize j = 0; j < modelSize; ++j)
             {
-                tempModel[i][j] = 0;
+                tTempModel[i][j] = 0;
             }
         }
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
     case LifeGame:
-        tempModel = new int*[modelSize];
+        cTempModel = new int*[modelSize];
         for(size_t i =0; i < modelSize; ++i)
         {
-            tempModel[i] = new int[modelSize];
+            cTempModel[i] = new int[modelSize];
         }
         for(MatrixSize i = 0; i < modelSize; ++i)
         {
             for(MatrixSize j = 0; j < modelSize; ++j)
             {
-                tempModel[i][j] = 0;
+                cTempModel[i][j] = 0;
             }
         }
         updateModel = &MatrixModel::LFCalculusModelThread;
@@ -151,8 +151,8 @@ void MatrixModel::LFTransferModelThread()
 
     //把current指向新模型，temp指向旧模型
     int **temp = currentModel;
-    currentModel = tempModel;
-    tempModel = temp;
+    currentModel = tTempModel;
+    tTempModel = temp;
 }
 
 void MatrixModel::transferModelLine(MatrixSize line)
@@ -168,7 +168,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
         int aroundValue = getAroundValue(line, j);
 
         //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
-        tempModel[line][j] = currentModel[line][j];
+        tTempModel[line][j] = currentModel[line][j];
         switch (aroundValue)
         {
         case 0:
@@ -176,7 +176,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
         case 2:
             break;
         case 3:
-            tempModel[line][j] = 1;
+            tTempModel[line][j] = 1;
             break;
         case 4:
         case 5:
@@ -186,7 +186,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
             break;
         case 10:
         case 11:
-            tempModel[line][j] = 0;
+            tTempModel[line][j] = 0;
             break;
         case 12:
         case 13:
@@ -196,7 +196,7 @@ void MatrixModel::transferModelLine(MatrixSize line)
         case 16:
         case 17:
         case 18:
-            tempModel[line][j] = 0;
+            tTempModel[line][j] = 0;
             break;
         default:
 #ifndef M_NO_DEBUG
@@ -270,7 +270,7 @@ void MatrixModel::LFCalculusModelThread()
     beginUpdate();
     for(MatrixSize i = 0; i < THREADS; ++i)
     {
-        future[i] = QtConcurrent::run(this, &MatrixModel::startCalculus1);
+        future[i] = QtConcurrent::run(this, &MatrixModel::startCalculus);
     }
     for(MatrixSize i = 0; i < THREADS; ++i)
     {
@@ -283,23 +283,10 @@ void MatrixModel::LFCalculusModelThread()
     debug = 0;
 #endif
 
-    beginUpdate();
-    for(MatrixSize i = 0; i < THREADS; ++i)
-    {
-        future[i] = QtConcurrent::run(this, &MatrixModel::startCalculus2);
-    }
-    for(MatrixSize i = 0; i < THREADS; ++i)
-    {
-        future[i].waitForFinished();//等待所有线程结束
-    }
-#ifndef M_NO_DEBUG
-    if(debug != modelSize)
-        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                 << "Thread runs:" << modelSize - debug
-                 << modelSize * (modelSize+1) / 2 - debugValue;
-    debug = 0;
-#endif
-
+    //把current指向新模型，temp指向旧模型
+    int **temp = currentModel;
+    currentModel = cTempModel;
+    cTempModel = temp;
 }
 
 void MatrixModel::changLineAroundValue(MatrixSize line)
@@ -312,8 +299,13 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
 
     for(MatrixSize y = 0; y < modelSize; ++y)
     {
-        if(currentModel[line][y] == 0)
+        if(currentModel[line][y] != 3 &&
+                currentModel[line][y] != 12 &&
+                currentModel[line][y] != 13)
+        {
+            currentModel[line][y] = 0;
             continue;
+        }
 
         MatrixSize around_1X = line != 0 ? line - 1 : modelSize - 1;
         MatrixSize around_1Y = y != 0 ? y - 1 : modelSize - 1;
@@ -340,102 +332,34 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
         MatrixSize around_9Y = y != modelSize - 1 ? y + 1 : 0;
 
         changeMutex.lock();
-        tempModel[around_1X][around_1Y] += 1;
-        tempModel[around_2X][around_2Y] += 1;
-        tempModel[around_3X][around_3Y] += 1;
-        tempModel[around_4X][around_4Y] += 1;
-        tempModel[line][y] += 10; //值大于等于10则表示对应current有值
-        tempModel[around_6X][around_6Y] += 1;
-        tempModel[around_7X][around_7Y] += 1;
-        tempModel[around_8X][around_8Y] += 1;
-        tempModel[around_9X][around_9Y] += 1;
+        cTempModel[around_1X][around_1Y] += 1;
+        cTempModel[around_2X][around_2Y] += 1;
+        cTempModel[around_3X][around_3Y] += 1;
+        cTempModel[around_4X][around_4Y] += 1;
+        cTempModel[line][y] += 10; //值大于等于10则表示对应current有值
+        cTempModel[around_6X][around_6Y] += 1;
+        cTempModel[around_7X][around_7Y] += 1;
+        cTempModel[around_8X][around_8Y] += 1;
+        cTempModel[around_9X][around_9Y] += 1;
 
 #ifndef M_NO_DEBUG
-        if(tempModel[line][y] > 18)
+        if(cTempModel[line][y] > 18)
             qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "Unclear!" << line << y << tempModel[line][y];
+                     << "Unclear!" << line << y << cTempModel[line][y];
 #endif
         changeMutex.unlock();
+        currentModel[line][y] = 0;
     }
 }
 
-void MatrixModel::calculusModelLine(MatrixSize line)
-{
-    QMutexLocker locker(&changeMutex);
 
-#ifndef M_NO_DEBUG
-    ++debug;
-    debugValue += line;
-#endif
-
-    for(MatrixSize y = 0; y < modelSize; ++y)
-    {
-        switch (tempModel[line][y])
-        {
-        case 0:
-        case 1:
-        case 2:
-            break;
-        case 3:
-            currentModel[line][y] = 1;
-            break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-            break;
-        case 10:
-        case 11:
-            currentModel[line][y] = 0;
-            break;
-        case 12:
-        case 13:
-            break;
-        case 14:
-        case 15:
-        case 16:
-        case 17:
-        case 18:
-            currentModel[line][y] = 0;
-            break;
-
-        default:
-#ifndef M_NO_DEBUG
-            qDebug() << "Value Error!" << line << y << tempModel[line][y];
-            currentModel[line][y] = 2;
-#endif
-            break;
-        }
-
-        tempModel[line][y] = 0;
-    }
-}
-
-void MatrixModel::startCalculus1()
+void MatrixModel::startCalculus()
 {
     MatrixSize line = getUpdateLine();
 
     while (currentStatus() || line != 0)
     {
         changLineAroundValue(line);
-        line = getUpdateLine();
-    }
-
-#ifndef M_NO_DEBUG
-        if(line != 0)
-            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "Overflow line" << line;
-#endif
-}
-
-void MatrixModel::startCalculus2()
-{
-    MatrixSize line = getUpdateLine();
-
-    while (currentStatus() || line != 0)
-    {
-        calculusModelLine(line);
         line = getUpdateLine();
     }
 

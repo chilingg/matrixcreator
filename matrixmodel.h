@@ -14,6 +14,7 @@
 
 using MatrixSize = std::vector<int>::size_type;
 using std::vector;
+using MRgb = unsigned int;
 
 class MatrixModel
 {
@@ -23,11 +24,12 @@ public:
     MatrixModel(unsigned widht = 0, ModelPattern pattern = EmptyPattern);
     ~MatrixModel();
 
-    int getUnitValue(MatrixSize x, MatrixSize y) const;		//获取单元值
+    int getUnitValue(MatrixSize x, MatrixSize y) const;//获取单元值
     unsigned getModelSize() const;
-    void (MatrixModel::*updateModel)();									//更新数据
-    void changeModelValue(MatrixSize x, MatrixSize y, int value);	//修改单元的值
-    void clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height);	//清空单元值
+    ModelPattern getCurrentPattern() const;
+    void (MatrixModel::*updateModel)();//指向当前模式的更新数据方法
+    void changeModelValue(MatrixSize x, MatrixSize y, int value);//修改单元的值
+    void clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height);//清空单元值
     void clearAllUnit();
     ModelPattern switchModel(ModelPattern after);
     
@@ -43,15 +45,14 @@ private:
     void transferModelLine(MatrixSize line);//使用Transfer一次更新一行
     void startTransfer();//送进线程中的控制函数
     int getAroundValue(MatrixSize x, MatrixSize y);
-    int **tempModel;
+    int **tTempModel;
 
     //LifeGame模型演变Calculus
     //把当前模型对下次更新的影响记录下来，再依据记录修改当前模型
     void LFCalculusModelThread();//启用Calculus线程
     void changLineAroundValue(MatrixSize line);//记录当前行对四周的影响
-    void calculusModelLine(MatrixSize line);//依据记录修改当前行
     void startCalculus1();//控制记录线程
-    void startCalculus2();//控制修改线程
+    int **cTempModel;
 
     unsigned THREADS;
     vector<QFuture<void> > future;
@@ -86,6 +87,11 @@ inline int MatrixModel::getUnitValue(MatrixSize x, MatrixSize y) const
 inline unsigned MatrixModel::getModelSize() const
 {
     return modelSize;
+}
+
+inline MatrixModel::ModelPattern MatrixModel::getCurrentPattern() const
+{
+    return modelPattern;
 }
 
 inline void MatrixModel::changeModelValue(MatrixSize x, MatrixSize y, int value)

@@ -35,6 +35,7 @@ public:
     QRect getSelectViewRect() const;
     QRect getSelectUnitRect() const;
     MPoint inView(QPoint clicktedPos) const;//查看点击坐标是否发生在视图中
+    void switchColorPattern(MatrixModel::ModelPattern pattern);
 
 protected:
     void resizeEvent(QResizeEvent *);
@@ -49,6 +50,10 @@ private:
     void drawReferenceLine(QPainter &painter);//绘制参考线
     void drawSelectBox(QPainter &painter);//绘制选框
     void drawFPSText(QPainter &painter);//绘制FPS数据
+
+    QRgb (*valueToColor)(int);
+    static QRgb tValueToColor(int value);
+    static QRgb cValueToColor(int value);
 
     const MatrixModel &model;
     const int MODELSIZE;

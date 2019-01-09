@@ -38,6 +38,8 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     moveToCoordinate(MODELSIZE/2, MODELSIZE/2);
 
     fpsTime.start();
+
+    switchColorPattern(model.getCurrentPattern());
 }
 
 MPoint MatrixView::inView(QPoint clicktedPos) const
@@ -58,6 +60,21 @@ MPoint MatrixView::inView(QPoint clicktedPos) const
     }
 
     return cdt;
+}
+
+void MatrixView::switchColorPattern(MatrixModel::ModelPattern pattern)
+{
+    switch(pattern)
+    {
+    case MatrixModel::LifeGame:
+        valueToColor = cValueToColor;
+        break;
+    case MatrixModel::LifeGameT:
+        valueToColor = tValueToColor;
+        break;
+    default:
+        valueToColor = nullptr;
+    }
 }
 
 void MatrixView::zoomView(MPoint cdt, MatrixView::Zoom zoom)
@@ -210,10 +227,7 @@ void MatrixView::drawBaseUnits(int left, int top, int mWidth, int mHeight, QImag
             //Get modeldata and select color
             QRgb color;
             int value = model.getUnitValue(i + modelOffsetX + left, j + modelOffsetY + top);
-            if(value <= 0)
-                color = MatrixColor::LUMINOSITY_0_0.rgb();
-            else
-                color = MatrixColor::LUMINOSITY_4_204.rgb();
+            color = valueToColor(value);
 
             //右下少绘制一行一列，用以形成一级参考线
             int interval = 0;
@@ -333,4 +347,52 @@ void MatrixView::drawFPSText(QPainter &painter)
         point.setX(point.x() + number[0].width());
         painter.drawPixmap(point, number[fpsF]);
     }
+}
+
+QRgb MatrixView::tValueToColor(int value)
+{
+    if(value == 0)
+        return MatrixColor::LUMINOSITY_0_0.rgb();
+    else
+        return MatrixColor::LUMINOSITY_4_204.rgb();
+}
+
+QRgb MatrixView::cValueToColor(int value)
+{
+    QRgb color = 0;
+    switch (value)
+    {
+    case 0:
+    case 1:
+    case 2:
+        break;
+    case 3:
+        color = MatrixColor::LUMINOSITY_4_204.rgb();
+        break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 10:
+    case 11:
+        break;
+    case 12:
+    case 13:
+        color = MatrixColor::LUMINOSITY_4_204.rgb();
+        break;
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+        break;
+    default:
+#ifndef M_NO_DEBUG
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "Value Over range!" << value ;
+#endif
+        break;
+    }
+    return  color;
 }

@@ -3,13 +3,15 @@
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
-    model(2000, MatrixModel::LifeGameT),
+    model(2000, MatrixModel::LifeGame),
     view(model, this),
     modelResume(false),
     moveViewPos(),
     selectPos(),
     clickedPos{false,0,0,QPoint(),QRect()},
-    defaultValue(1),
+    dfv1(3),
+    dfv2(0),
+    defaultValue(dfv1),
     cursorTool(POINT),
     lastCursorTool(CIRCLE),
     circleCursor(QPixmap(":/cursor/circle"), 0, 0),
@@ -26,6 +28,8 @@ MatrixController::MatrixController(QWidget *parent):
 
     //默认点选工具
     setCursor(pointCursor);
+
+    statusBar();
 }
 
 void MatrixController::timerEvent(QTimerEvent *)
@@ -368,7 +372,11 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     //X 交换两个默认值
     if(event->key() == Qt::Key_X)
     {
-        defaultValue = !defaultValue;
+        if(defaultValue == dfv1)
+            defaultValue = dfv1;
+        else
+            defaultValue = dfv2;
+
         return;
     }
     //ctrl+delete 清除全部

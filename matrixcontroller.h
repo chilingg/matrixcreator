@@ -41,6 +41,8 @@ private:
     QPoint moveViewPos;
     QRect selectPos;
     MPoint clickedPos;
+    int dfv1;
+    int dfv2;
     int defaultValue;
 
     CursorTool cursorTool;
