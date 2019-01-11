@@ -9,7 +9,7 @@ MatrixController::MatrixController(QWidget *parent):
     moveViewPos(),
     selectPos(),
     clickedPos{false,0,0,QPoint(),QRect()},
-    dfv1(3),
+    dfv1(0),
     dfv2(0),
     defaultValue(dfv1),
     cursorTool(POINT),
@@ -22,6 +22,8 @@ MatrixController::MatrixController(QWidget *parent):
     resize(840, 720);//默认大小
     setWindowState(Qt::WindowMaximized);//默认最大化
     setCentralWidget(&view);
+
+    selectPattern(model.getCurrentPattern());
 
     //每秒24帧
     startTimer(1000/24);
@@ -460,5 +462,27 @@ void MatrixController::wheelEvent(QWheelEvent *event)
     {
         QMainWindow::wheelEvent(event);
         return;
+    }
+}
+
+void MatrixController::selectPattern(MatrixModel::ModelPattern p)
+{
+    switch(p)
+    {
+    case MatrixModel::LifeGame:
+        dfv1 = 3;
+        dfv2 = 0;
+        defaultValue = dfv1;
+        break;
+    case MatrixModel::LifeGameT:
+        dfv1 = 1;
+        dfv2 = 0;
+        defaultValue = dfv1;
+        break;
+    default:
+        dfv1 = 0;
+        dfv2 = 0;
+        defaultValue = dfv1;
+        break;
     }
 }

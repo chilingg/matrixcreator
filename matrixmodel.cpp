@@ -30,7 +30,7 @@ MatrixModel::~MatrixModel()
 void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height)
 {
 #ifndef M_NO_DEBUG
-    if(x+widht-1 > modelSize || y+height-1 > modelSize)
+    if(x+widht > modelSize || y+height > modelSize)
         qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                  << "error: Index out of range!";
 #endif

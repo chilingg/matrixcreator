@@ -33,6 +33,7 @@ protected:
 
 private:
     void clearSelectBox();
+    void selectPattern(MatrixModel::ModelPattern p);
 
     MatrixModel model;
     MatrixView view;
