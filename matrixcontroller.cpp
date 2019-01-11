@@ -3,7 +3,7 @@
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
-    model(2000, MatrixModel::LifeGame),
+    model(4000, MatrixModel::LifeGame),
     view(model, this),
     modelResume(false),
     moveViewPos(),

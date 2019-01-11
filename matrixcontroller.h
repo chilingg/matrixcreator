@@ -19,7 +19,7 @@ class MatrixController : public QMainWindow
     Q_OBJECT
 
 public:
-    enum CursorTool{ POINT, CIRCLE, TRANSLATE };
+    enum CursorTool{ POINT, CIRCLE, TRANSLATE, DEFAULT };
     MatrixController(QWidget *parent = nullptr);
 
 protected:

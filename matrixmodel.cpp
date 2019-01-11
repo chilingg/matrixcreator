@@ -6,8 +6,7 @@ MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     currentModel(new int*[size]),
     modelPattern(EmptyPattern),
     modelSize(size),
-    updateStatus(false),
-    updateLine(0)
+    updateStatus(false)
 {
     for(size_t i =0; i < modelSize; ++i)
     {
@@ -116,18 +115,42 @@ MatrixSize MatrixModel::getUpdateLine()
 {
     //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
     QMutexLocker locker(&lineMutex);
+    static size_t line = 0;
 
     if(!updateStatus)
         return 0;
 
-    if(updateLine >= modelSize)
+    if(line >= modelSize)
     {
-        updateLine = 0;
+        line = 0;
         updateStatus = false;
         return 0;
     }
 
-    return updateLine++;
+    return line++;
+}
+
+MatrixSize MatrixModel::getUpdateLine(MatrixSize interval, MatrixSize pos)
+{
+    //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
+    QMutexLocker locker(&lineMutex);
+    static MatrixSize line = 0;
+    static MatrixSize sum = 0;
+
+    if(!updateStatus)
+        return pos;
+
+    line = sum * interval + pos;
+    if(line >= modelSize)
+    {
+        line = 0;
+        sum = 0;
+        updateStatus = false;
+        return pos;
+    }
+
+    ++sum;
+    return line;
 }
 
 void MatrixModel::LFTransferModelThread()
@@ -331,7 +354,7 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
         MatrixSize around_9X = line != modelSize - 1 ? line + 1 : 0;
         MatrixSize around_9Y = y != modelSize - 1 ? y + 1 : 0;
 
-        changeMutex.lock();
+        //changeMutex.lock();
         cTempModel[around_1X][around_1Y] += 1;
         cTempModel[around_2X][around_2Y] += 1;
         cTempModel[around_3X][around_3Y] += 1;
@@ -347,7 +370,7 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
             qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                      << "Unclear!" << line << y << cTempModel[line][y];
 #endif
-        changeMutex.unlock();
+        //changeMutex.unlock();
         currentModel[line][y] = 0;
     }
 }
@@ -355,17 +378,32 @@ void MatrixModel::changLineAroundValue(MatrixSize line)
 
 void MatrixModel::startCalculus()
 {
-    MatrixSize line = getUpdateLine();
+    static unsigned threadSum = 0;
+    static const unsigned intarval = 3;//在区间内修改模型是线程安全的
+    MatrixSize offset = 0;//逐步增加区间内的偏移值
 
-    while (currentStatus() || line != 0)
-    {
-        changLineAroundValue(line);
-        line = getUpdateLine();
-    }
+    do{
+        MatrixSize line = getUpdateLine(intarval, offset);
 
-#ifndef M_NO_DEBUG
-        if(line != 0)
-            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "Overflow line" << line;
-#endif
+        while (currentStatus() || line != offset)
+        {
+            changLineAroundValue(line);
+            line = getUpdateLine(intarval, offset);
+        }
+
+        //同步线程
+        changeMutex.lock();
+        ++threadSum;
+        if(threadSum == THREADS)
+        {
+            synchroThread.wakeAll();//唤醒全部线程
+            threadSum = 0;
+            beginUpdate();
+        }
+        else {
+            synchroThread.wait(&changeMutex);//线程等待
+        }
+        changeMutex.unlock();
+
+    }while (++offset < intarval);
 }

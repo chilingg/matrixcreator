@@ -12,9 +12,8 @@
 #include <QDebug>
 #endif
 
-using MatrixSize = std::vector<int>::size_type;
+using MatrixSize = size_t;
 using std::vector;
-using MRgb = unsigned int;
 
 class MatrixModel
 {
@@ -37,7 +36,9 @@ private:
     //Thread
     void beginUpdate();//开启更新状态
     MatrixSize getUpdateLine();//获取一个未被其它线程获取的行号，全部行号获取完毕则结束更新状态
+    MatrixSize getUpdateLine(MatrixSize interval, MatrixSize pos);
     bool currentStatus() const;//查询当前更新状态是否开启
+    QMutex lineMutex;
 
     //LifeGame模型迁变Transfer
     //依据当前模型四周的状态计算下一状态，储存在临时模型中，结束后把该临时模型指定为当前模型
@@ -51,20 +52,18 @@ private:
     //把当前模型对下次更新的影响记录下来，再依据记录修改当前模型
     void LFCalculusModelThread();//启用Calculus线程
     void changLineAroundValue(MatrixSize line);//记录当前行对四周的影响
-    void startCalculus1();//控制记录线程
+    void startCalculus();//控制记录线程
+    QMutex changeMutex;
+    QWaitCondition synchroThread;
     int **cTempModel;
 
     unsigned THREADS;
     vector<QFuture<void> > future;
-    //vector<int> currentModel;
     int **currentModel;
     ModelPattern modelPattern;
     unsigned modelSize;
     
     bool updateStatus;
-    MatrixSize updateLine;
-    QMutex lineMutex;
-    QMutex changeMutex;
 
 #ifndef M_NO_DEBUG
     //测试用，记录线程中函数是否运行足够的次数
