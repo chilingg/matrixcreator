@@ -1,5 +1,6 @@
 #include "matrixcontroller.h"
 #include <QFileDialog>
+#include <QStatusBar>
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
@@ -40,6 +41,7 @@ void MatrixController::timerEvent(QTimerEvent *)
     {
         (model.*(model.updateModel))();
         view.update();
+        statusBar()->showMessage(QString().number(view.getViewOffsetPoint().y()));
     }
 }
 
@@ -136,7 +138,7 @@ void MatrixController::mouseMoveEvent(QMouseEvent *event)
                 }
                 if(viewPos.modelRow != beforePos.modelRow)//Vertical
                 {
-                    view.translationView(beforePos.modelRow - viewPos.modelRow, 0);
+                    view.translationView(0, beforePos.modelRow - viewPos.modelRow);
                     moveViewPos.setY(viewPos.clickted.y());
                 }
 
@@ -216,13 +218,25 @@ void MatrixController::mouseReleaseEvent(QMouseEvent *event)
         default:
             break;
         }
+        view.overRangeLineOff();
+        view.update();
     }
 
     if(event->button() == Qt::LeftButton)
     {
-        moveViewPos = QPoint();
+        if(!moveViewPos.isNull())
+            moveViewPos = QPoint();
+
         clickedPos.valid = false;
-        selectPos = QRect();
+
+        if(selectPos.isValid())
+            selectPos = QRect();
+
+        if(cursorTool == TRANSLATE)
+        {
+            view.overRangeLineOff();
+            view.update();
+        }
     }
 }
 

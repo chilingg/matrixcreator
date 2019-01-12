@@ -29,6 +29,7 @@ public:
     void referenceLineOnOff();//参考线开关
     void gridOnOff();//网格开关
     void fpsOnOff();//帧率显示开关
+    void overRangeLineOff();//取消越界线显示
     void noRedrawUnits();//不重绘单元视图
     void takePicture(QString path);//获取选区或屏幕照片
     QPoint getViewOffsetPoint() const;
@@ -44,12 +45,15 @@ protected:
 private:
     void updateViewSize();//更新视图数据
     void moveViewCheckup();//检查视图显示的单元是否正常
+    void moveViewCheckupDisplay();//若视图越界则修正并显示
     void FPSCount();//FPS计算
     void drawBaseUnits();//绘制所有基础单元格
     void drawBaseUnits(int left, int top, int mWidth, int mHeight, QImage &picture);
     void drawReferenceLine(QPainter &painter);//绘制参考线
     void drawSelectBox(QPainter &painter);//绘制选框
     void drawFPSText(QPainter &painter);//绘制FPS数据
+    void drawOverRangeLine(QPainter &painter);//绘制越界提示线
+    void viewOverRange(bool top, bool bottom, bool left, bool right);
 
     QRgb (*valueToColor)(int);
     static QRgb tValueToColor(int value);
@@ -75,7 +79,8 @@ private:
     bool unitsDspl;	//绘制模型单元
     bool gridDspl; 	//绘制网格参考线
     bool rflDspl; 	//绘制网格参考线
-    bool fpsDspl;		//fps显示
+    bool fpsDspl;	//fps显示
+    array<bool, 5> overRange;//移动视图越界提示
 
     QRect selectedViewRect;	//选框
     QImage unitImage;			//模型单元图像
@@ -164,6 +169,15 @@ inline void MatrixView::drawSelectBox(QPainter &painter)
     painter.drawRect(selectedViewRect);
 }
 
+inline void MatrixView::viewOverRange(bool top, bool bottom, bool left, bool right)
+{
+    overRange[0] = true;//是否越界
+    overRange[1] = top;
+    overRange[2] = bottom;
+    overRange[3] = left;
+    overRange[4] = right;
+}
+
 inline void MatrixView::FPSCount()
 {
     static int interval = fpsTime.elapsed();
@@ -182,14 +196,22 @@ inline void MatrixView::moveViewCheckup()
 {
     //检查模型单元显示
     if(modelOffsetX + viewColumn > MODELSIZE)
+    {
         modelOffsetX = MODELSIZE - viewColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
+    }
     else if(modelOffsetX < 0)
+    {
         modelOffsetX = 0;
+    }
 
     if(modelOffsetY + viewRow > MODELSIZE)
+    {
         modelOffsetY = MODELSIZE - viewRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
+    }
     else if(modelOffsetY < 0)
+    {
         modelOffsetY = 0;
+    }
 }
 
 inline void MatrixView::translationView(int horizontal, int vertical)
@@ -203,7 +225,7 @@ inline void MatrixView::translationView(int horizontal, int vertical)
         modelOffsetY += vertical;
     }
 
-    moveViewCheckup();
+    moveViewCheckupDisplay();
 }
 
 inline void MatrixView::referenceLineOnOff()
@@ -227,6 +249,11 @@ inline void MatrixView::fpsOnOff()
 {
     fpsDspl = !fpsDspl;
     frameSum = 0;
+}
+
+inline void MatrixView::overRangeLineOff()
+{
+    overRange[0] = false;
 }
 
 inline void MatrixView::drawBaseUnits()

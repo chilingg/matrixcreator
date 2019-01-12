@@ -22,6 +22,7 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     gridDspl(true),
     rflDspl(true),
     fpsDspl(true),
+    overRange{false,false,false,false,false},
     selectedViewRect(),
     unitImage(),
     fpsCount(0),
@@ -60,6 +61,32 @@ MPoint MatrixView::inView(QPoint clicktedPos) const
     }
 
     return cdt;
+}
+
+void MatrixView::moveViewCheckupDisplay()
+{
+    //检查模型单元显示
+    if(modelOffsetX + viewColumn > MODELSIZE)
+    {
+        modelOffsetX = MODELSIZE - viewColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
+        viewOverRange(false,false,false,true);
+    }
+    else if(modelOffsetX < 0)
+    {
+        modelOffsetX = 0;
+        viewOverRange(false,false,true,false);
+    }
+
+    if(modelOffsetY + viewRow > MODELSIZE)
+    {
+        modelOffsetY = MODELSIZE - viewRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
+        viewOverRange(false,true,false,false);
+    }
+    else if(modelOffsetY < 0)
+    {
+        modelOffsetY = 0;
+        viewOverRange(true,false,false,false);
+    }
 }
 
 void MatrixView::switchColorPattern(MatrixModel::ModelPattern pattern)
@@ -183,6 +210,9 @@ void MatrixView::paintEvent(QPaintEvent *)
 
     if(selectedViewRect.isValid()) //绘制选框
         drawSelectBox(painter);
+
+    if(overRange[0])//绘制越界提示线
+        drawOverRangeLine(painter);
 
     if(fpsDspl)
     {
@@ -347,6 +377,47 @@ void MatrixView::drawFPSText(QPainter &painter)
         point.setX(point.x() + number[0].width());
         painter.drawPixmap(point, number[fpsF]);
     }
+}
+
+void MatrixView::drawOverRangeLine(QPainter &painter)
+{
+    painter.save();
+    painter.setPen(Qt::NoPen);
+
+    if(overRange[1])
+    {
+        QLinearGradient gradient(0, 0, 0, unitSize);
+        gradient.setColorAt(0.0, MatrixColor::WARNING);
+        gradient.setColorAt(1.0, MatrixColor::LUMINOSITY_0_0);
+        painter.setBrush(QBrush(gradient));
+        painter.drawRect(0, 0, viewColumn*unitSize, unitSize);
+    }
+    else if(overRange[2])
+    {
+        QLinearGradient gradient(0, viewRow*unitSize - unitSize, 0, viewRow*unitSize);
+        gradient.setColorAt(0.0, MatrixColor::LUMINOSITY_0_0);
+        gradient.setColorAt(1.0, MatrixColor::WARNING);
+        painter.setBrush(QBrush(gradient));
+        painter.drawRect(0, viewRow*unitSize - unitSize, viewColumn*unitSize, unitSize);
+    }
+    else if(overRange[3])
+    {
+        QLinearGradient gradient(0, 0, unitSize, 0);
+        gradient.setColorAt(0.0, MatrixColor::WARNING);
+        gradient.setColorAt(1.0, MatrixColor::LUMINOSITY_0_0);
+        painter.setBrush(QBrush(gradient));
+        painter.drawRect(0, 0, unitSize, viewRow*unitSize);
+    }
+    else if(overRange[4])
+    {
+        QLinearGradient gradient(viewColumn*unitSize - unitSize, 0, viewColumn*unitSize, 0);
+        gradient.setColorAt(0.0, MatrixColor::LUMINOSITY_0_0);
+        gradient.setColorAt(1.0, MatrixColor::WARNING);
+        painter.setBrush(QBrush(gradient));
+        painter.drawRect(viewColumn*unitSize - unitSize, 0, unitSize, viewRow*unitSize);
+    }
+
+    painter.restore();
 }
 
 QRgb MatrixView::tValueToColor(int value)
