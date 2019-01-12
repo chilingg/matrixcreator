@@ -10,9 +10,8 @@ MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
 {
     for(size_t i =0; i < modelSize; ++i)
     {
-        currentModel[i] = new int[modelSize];
+        currentModel[i] = new int[modelSize]();
     }
-    clearAllUnit();
 
     modelPattern = switchModel(pattern);
 }
@@ -77,14 +76,7 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
         tTempModel = new int*[modelSize];
         for(size_t i =0; i < modelSize; ++i)
         {
-            tTempModel[i] = new int[modelSize];
-        }
-        for(MatrixSize i = 0; i < modelSize; ++i)
-        {
-            for(MatrixSize j = 0; j < modelSize; ++j)
-            {
-                tTempModel[i][j] = 0;
-            }
+            tTempModel[i] = new int[modelSize]();
         }
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
@@ -92,14 +84,7 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
         cTempModel = new int*[modelSize];
         for(size_t i =0; i < modelSize; ++i)
         {
-            cTempModel[i] = new int[modelSize];
-        }
-        for(MatrixSize i = 0; i < modelSize; ++i)
-        {
-            for(MatrixSize j = 0; j < modelSize; ++j)
-            {
-                cTempModel[i][j] = 0;
-            }
+            cTempModel[i] = new int[modelSize]();
         }
         updateModel = &MatrixModel::LFCalculusModelThread;
         break;
