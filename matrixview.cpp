@@ -17,7 +17,7 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
         MatrixColor::LUMINOSITY_1_51,
         MatrixColor::LUMINOSITY_2_68,
         },
-    unitSize(zoomList[3]),
+    unitSize(zoomList[4]),
     unitsDspl(true),
     gridDspl(true),
     rflDspl(true),

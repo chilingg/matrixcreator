@@ -9,6 +9,8 @@
 #include <QKeyEvent>
 #include <QWheelEvent>
 #include <QCursor>
+#include <QStatusBar>
+#include <QLabel>
 
 #ifndef M_NO_DEBUG
 #include <QDebug>
@@ -51,6 +53,12 @@ private:
     QCursor circleCursor;
     QCursor pointCursor;
     QCursor translateCursor;
+
+    QStatusBar *mStatusBar;
+    QLabel *mInfoLabel;
+    long long unsigned generation;
+    const QString unitInfo;
+    const QString mInfo;
 };
 
 inline void MatrixController::clearSelectBox()

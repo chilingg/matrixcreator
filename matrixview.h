@@ -24,7 +24,7 @@ public:
     void moveToCoordinate(int column, int row);//移动指定坐标至左上角
     void moveToCoordinate();//移动指定坐标模型中间
     void selectUnits(QRect selectBox);//显示选框
-    void translationView(int horizontal, int vertical);//移动视图至指定坐标
+    void translationView(MatrixSize horizontal, MatrixSize vertical);//移动视图至指定坐标
     void zoomView(MPoint cdt, Zoom zoom);//缩放视图
     void referenceLineOnOff();//参考线开关
     void gridOnOff();//网格开关
@@ -33,6 +33,7 @@ public:
     void noRedrawUnits();//不重绘单元视图
     void takePicture(QString path);//获取选区或屏幕照片
     QPoint getViewOffsetPoint() const;
+    int getUnitSize() const;
     QRect getSelectViewRect() const;
     QRect getSelectUnitRect() const;
     MPoint inView(QPoint clicktedPos) const;//查看点击坐标是否发生在视图中
@@ -83,7 +84,7 @@ private:
     array<bool, 5> overRange;//移动视图越界提示
 
     QRect selectedViewRect;	//选框
-    QImage unitImage;			//模型单元图像
+    QImage unitImage;		//模型单元图像
 
     //fps计算
     double fpsCount;
@@ -152,6 +153,11 @@ inline QPoint MatrixView::getViewOffsetPoint() const
     return QPoint(viewOffsetX, viewOffsetY);
 }
 
+inline int MatrixView::getUnitSize() const
+{
+    return unitSize;
+}
+
 inline QRect MatrixView::getSelectViewRect() const
 {
     return selectedViewRect;
@@ -214,7 +220,7 @@ inline void MatrixView::moveViewCheckup()
     }
 }
 
-inline void MatrixView::translationView(int horizontal, int vertical)
+inline void MatrixView::translationView(MatrixSize horizontal, MatrixSize vertical)
 {
     if(horizontal)
     {

@@ -1,6 +1,5 @@
 #include "matrixcontroller.h"
 #include <QFileDialog>
-#include <QStatusBar>
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
@@ -17,7 +16,12 @@ MatrixController::MatrixController(QWidget *parent):
     lastCursorTool(CIRCLE),
     circleCursor(QPixmap(":/cursor/circle"), 0, 0),
     pointCursor(QPixmap(":/cursor/point"), 0, 0),
-    translateCursor(QPixmap(":/cursor/translate"), 8, 8)
+    translateCursor(QPixmap(":/cursor/translate"), 8, 8),
+    mStatusBar(statusBar()),
+    mInfoLabel(new QLabel()),
+    generation(0),
+    unitInfo("XY = %1,%2    value = %3"),
+    mInfo(" Scale = 1:%2\t  Generation = %1\t")
 {
     setWindowTitle(tr("MatrixCreator"));
     resize(840, 720);//默认大小
@@ -32,7 +36,9 @@ MatrixController::MatrixController(QWidget *parent):
     //默认点选工具
     setCursor(pointCursor);
 
-    statusBar();
+    //状态栏设置
+    mInfoLabel->setText(mInfo.arg(generation).arg(view.getUnitSize()));
+    mStatusBar->addPermanentWidget(mInfoLabel);
 }
 
 void MatrixController::timerEvent(QTimerEvent *)
@@ -40,8 +46,8 @@ void MatrixController::timerEvent(QTimerEvent *)
     if(modelResume)
     {
         (model.*(model.updateModel))();
+        mInfoLabel->setText(mInfo.arg(++generation).arg(view.getUnitSize()));
         view.update();
-        statusBar()->showMessage(QString().number(view.getViewOffsetPoint().y()));
     }
 }
 
@@ -53,6 +59,11 @@ void MatrixController::mousePressEvent(QMouseEvent *event)
     //查看点击是否发生在视图中
     if(viewPos.valid)
     {
+        QString clickedInfo = unitInfo.arg(viewPos.modelColumn)
+                .arg(viewPos.modelRow)
+                .arg(model.getUnitValue(viewPos.modelColumn, viewPos.modelRow));
+        mStatusBar->showMessage(clickedInfo, 4000);
+
         if (event->button() == Qt::MidButton)
         {
             moveViewPos = event->pos();//点击中键记录当前坐标
@@ -413,6 +424,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_Right)
     {
         (model.*(model.updateModel))();
+        mInfoLabel->setText(mInfo.arg(++generation).arg(view.getUnitSize()));
         view.update();
         return;
     }
