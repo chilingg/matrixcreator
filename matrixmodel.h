@@ -12,8 +12,8 @@
 #include <QDebug>
 #endif
 
-using MatrixSize = size_t;
 using std::vector;
+using MatrixSize = vector<int>::size_type;
 
 class MatrixModel
 {
@@ -46,7 +46,7 @@ private:
     void transferModelLine(MatrixSize line);//使用Transfer一次更新一行
     void startTransfer();//送进线程中的控制函数
     int getAroundValue(MatrixSize x, MatrixSize y);
-    int **tTempModel;
+    vector<vector<int> >tTempModel;
 
     //LifeGame模型演变Calculus
     //把当前模型对下次更新的影响记录下来，再依据记录修改当前模型
@@ -55,11 +55,11 @@ private:
     void startCalculus();//控制记录线程
     QMutex changeMutex;
     QWaitCondition synchroThread;
-    int **cTempModel;
+    vector<vector<int> >cTempModel;
 
     unsigned THREADS;
     vector<QFuture<void> > future;
-    int **currentModel;
+    vector<vector<int> >currentModel;
     ModelPattern modelPattern;
     unsigned modelSize;
     

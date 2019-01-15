@@ -3,27 +3,18 @@
 MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     THREADS(std::thread::hardware_concurrency()),
     future(THREADS),	//获取cpu核数
-    currentModel(new int*[size]),
+    currentModel(size, vector<int>(size, 0)),
     modelPattern(EmptyPattern),
     modelSize(size),
     updateStatus(false)
 {
-    for(size_t i =0; i < modelSize; ++i)
-    {
-        currentModel[i] = new int[modelSize]();
-    }
-
     modelPattern = switchModel(pattern);
 }
 
 MatrixModel::~MatrixModel()
 {
     switchModel(EmptyPattern);
-    for(size_t i =0; i < modelSize; ++i)
-    {
-        delete [] currentModel[i];
-    }
-    delete [] currentModel;
+    currentModel.clear();
 }
 
 void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, MatrixSize height)
@@ -53,18 +44,10 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     //结束之前的模式
     switch (modelPattern) {
     case LifeGameT:
-        for(size_t i =0; i < modelSize; ++i)
-        {
-            delete [] tTempModel[i];
-        }
-        delete [] tTempModel;
+        tTempModel.clear();
         break;
     case LifeGame:
-        for(size_t i =0; i < modelSize; ++i)
-        {
-            delete [] cTempModel[i];
-        }
-        delete [] cTempModel;
+        cTempModel.clear();
         break;
     default:
         break;
@@ -73,19 +56,11 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     //开始新的模式
     switch (after) {
     case LifeGameT:
-        tTempModel = new int*[modelSize];
-        for(size_t i =0; i < modelSize; ++i)
-        {
-            tTempModel[i] = new int[modelSize]();
-        }
+        tTempModel.assign(modelSize, vector<int>(modelSize, 0));
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
     case LifeGame:
-        cTempModel = new int*[modelSize];
-        for(size_t i =0; i < modelSize; ++i)
-        {
-            cTempModel[i] = new int[modelSize]();
-        }
+        cTempModel.assign(modelSize, vector<int>(modelSize, 0));
         updateModel = &MatrixModel::LFCalculusModelThread;
         break;
     default:
@@ -158,9 +133,7 @@ void MatrixModel::LFTransferModelThread()
 #endif
 
     //把current指向新模型，temp指向旧模型
-    int **temp = currentModel;
-    currentModel = tTempModel;
-    tTempModel = temp;
+    swap(currentModel, tTempModel);
 }
 
 void MatrixModel::transferModelLine(MatrixSize line)
@@ -292,9 +265,7 @@ void MatrixModel::LFCalculusModelThread()
 #endif
 
     //把current指向新模型，temp指向旧模型
-    int **temp = currentModel;
-    currentModel = cTempModel;
-    cTempModel = temp;
+    swap(currentModel, cTempModel);
 }
 
 void MatrixModel::changLineAroundValue(MatrixSize line)
