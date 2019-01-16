@@ -6,6 +6,7 @@ MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     currentModel(size, vector<int>(size, 0)),
     modelPattern(EmptyPattern),
     modelSize(size),
+    traceOnOff(false),
     updateStatus(false)
 {
     modelPattern = switchModel(pattern);
@@ -30,6 +31,7 @@ void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, Matrix
         for(MatrixSize j = 0; j < height; ++j)
         {
             currentModel[x+i][y+j] = 0;
+            tracedUnit(i, j);
         }
     }
 }
@@ -45,6 +47,8 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     switch (modelPattern) {
     case LifeGameT:
         tTempModel.clear();
+        traceUnit.clear();
+        traceOnOff = false;
         break;
     case LifeGame:
         cTempModel.clear();
@@ -57,6 +61,7 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     switch (after) {
     case LifeGameT:
         tTempModel.assign(modelSize, vector<int>(modelSize, 0));
+        traceOnOff = true;
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
     case LifeGame:
@@ -115,8 +120,6 @@ MatrixSize MatrixModel::getUpdateLine(MatrixSize interval, MatrixSize pos)
 
 void MatrixModel::LFTransferModelThread()
 {
-    beginUpdate();
-
     for(MatrixSize i = 0; i < THREADS; ++i)
     {
         future[i] = QtConcurrent::run(this, &MatrixModel::startTransfer);
@@ -125,84 +128,73 @@ void MatrixModel::LFTransferModelThread()
     {
         future[i].waitForFinished();//等待所有线程结束
     }
-#ifndef M_NO_DEBUG
-    if(debug != modelSize)
-        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                 << "Thread runs:" << modelSize - debug;
-    debug = 0;
-#endif
 
     //把current指向新模型，temp指向旧模型
     swap(currentModel, tTempModel);
+    swap(traceUnit, traceUnit2);
 }
 
-void MatrixModel::transferModelLine(MatrixSize line)
+void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
 {
-#ifndef M_NO_DEBUG
-    changeMutex.lock();
-    ++debug;
-    changeMutex.unlock();
-#endif
+    int aroundValue = getAroundValue(column, row);
 
-    for(MatrixSize j = 0; j < modelSize; ++j)
+    qDebug() << column << row << aroundValue;
+    //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
+    tTempModel[column][row] = currentModel[column][row];
+    switch (aroundValue)
     {
-        int aroundValue = getAroundValue(line, j);
-
-        //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
-        tTempModel[line][j] = currentModel[line][j];
-        switch (aroundValue)
-        {
-        case 0:
-        case 1:
-        case 2:
-            break;
-        case 3:
-            tTempModel[line][j] = 1;
-            break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-            break;
-        case 10:
-        case 11:
-            tTempModel[line][j] = 0;
-            break;
-        case 12:
-        case 13:
-            break;
-        case 14:
-        case 15:
-        case 16:
-        case 17:
-        case 18:
-            tTempModel[line][j] = 0;
-            break;
-        default:
+    case 0:
+    case 1:
+    case 2:
+        break;
+    case 3:
+        tTempModel[column][row] = 1;
+        traceUnit2.insert({column, row});
+        break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 10:
+    case 11:
+        tTempModel[column][row] = 0;
+        break;
+    case 12:
+    case 13:
+        traceUnit2.insert({column, row});
+        break;
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+        tTempModel[column][row] = 0;
+        break;
+    default:
 #ifndef M_NO_DEBUG
-            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "AroundValue Over range!" << aroundValue ;
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "AroundValue Over range!" << aroundValue ;
 #endif
-            break;
-        }
+        break;
     }
 }
 
 void MatrixModel::startTransfer()
 {
-    MatrixSize line = getUpdateLine();
+    UnitPoint point = popTracedUnit();
 
-    while (currentStatus() || line != 0)
+    UnitPoint end = std::make_pair(modelSize, modelSize);
+    while (!traceUnit.empty() || point != end)
     {
-        transferModelLine(line);
-        line = getUpdateLine();
+        transferModelLine(point.first, point.second);
+        point = popTracedUnit();
     }
 
 #ifndef M_NO_DEBUG
-        if(line != 0)
+        if(point != end)
             qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "Overflow line" << line;
+                     << "Overflow line" << point;
 #endif
 }
 
@@ -362,4 +354,20 @@ void MatrixModel::startCalculus()
         changeMutex.unlock();
 
     }while (++offset < intarval);
+}
+
+UnitPoint MatrixModel::popTracedUnit()
+{
+    //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
+    QMutexLocker locker(&lineMutex);
+
+    if(traceUnit.empty())
+    {
+        return {modelSize, modelSize};
+    }
+
+    UnitPoint point = *traceUnit.begin();
+    traceUnit.erase(point);
+
+    return point;
 }

@@ -7,13 +7,18 @@
 #include <QMutex>
 #include <QtConcurrent>
 #include <vector>
+#include <set>
+#include <utility>
 
 #ifndef M_NO_DEBUG
 #include <QDebug>
 #endif
 
+using std::set;
+using std::pair;
 using std::vector;
 using MatrixSize = vector<int>::size_type;
+using UnitPoint = pair<MatrixSize, MatrixSize>;
 
 class MatrixModel
 {
@@ -43,7 +48,7 @@ private:
     //LifeGame模型迁变Transfer
     //依据当前模型四周的状态计算下一状态，储存在临时模型中，结束后把该临时模型指定为当前模型
     void LFTransferModelThread();//启用Transfer线程
-    void transferModelLine(MatrixSize line);//使用Transfer一次更新一行
+    void transferModelLine(MatrixSize line, MatrixSize row);//使用Transfer一次更新一行
     void startTransfer();//送进线程中的控制函数
     int getAroundValue(MatrixSize x, MatrixSize y);
     vector<vector<int> >tTempModel;
@@ -62,6 +67,13 @@ private:
     vector<vector<int> >currentModel;
     ModelPattern modelPattern;
     unsigned modelSize;
+
+    //追踪unit
+    void tracedUnit(MatrixSize column, MatrixSize row);//开启追踪时才会记录坐标
+    UnitPoint popTracedUnit();
+    set<UnitPoint> traceUnit;
+    set<UnitPoint> traceUnit2;
+    bool traceOnOff;
     
     bool updateStatus;
 
@@ -102,6 +114,7 @@ inline void MatrixModel::changeModelValue(MatrixSize x, MatrixSize y, int value)
 #endif
 
     currentModel[x][y] = value;
+    tracedUnit(x, y);
 }
 
 inline void MatrixModel::beginUpdate()
@@ -112,6 +125,12 @@ inline void MatrixModel::beginUpdate()
 inline bool MatrixModel::currentStatus() const
 {
     return updateStatus;
+}
+
+inline void MatrixModel::tracedUnit(MatrixSize column, MatrixSize row)
+{
+    if(traceOnOff)
+        traceUnit.insert({column, row});
 }
 
 #endif // MATRIXMODEL_H
