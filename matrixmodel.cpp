@@ -30,8 +30,13 @@ void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, Matrix
     {
         for(MatrixSize j = 0; j < height; ++j)
         {
-            currentModel[x+i][y+j] = 0;
-            tracedUnit(i, j);
+            if(currentModel[x+i][y+j] != 0)
+            {
+                unTracedUnit(x+i, y+j, traceUnit);
+                currentModel[x+i][y+j] = 0;
+            }
+            if(tTempModel[x+i][y+j] != 0)
+                tTempModel[x+i][y+j] = 0;
         }
     }
 }
@@ -138,7 +143,6 @@ void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
 {
     int aroundValue = getAroundValue(column, row);
 
-    qDebug() << column << row << aroundValue;
     //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
     tTempModel[column][row] = currentModel[column][row];
     switch (aroundValue)
@@ -149,7 +153,9 @@ void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
         break;
     case 3:
         tTempModel[column][row] = 1;
-        traceUnit2.insert({column, row});
+        changeMutex.lock();
+        tracedUnit(column, row, traceUnit2);
+        changeMutex.unlock();
         break;
     case 4:
     case 5:
@@ -162,7 +168,9 @@ void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
         break;
     case 12:
     case 13:
-        traceUnit2.insert({column, row});
+        changeMutex.lock();
+        tracedUnit(column, row, traceUnit2);
+        changeMutex.unlock();
         break;
     case 14:
     case 15:
@@ -182,19 +190,40 @@ void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
 
 void MatrixModel::startTransfer()
 {
-    UnitPoint point = popTracedUnit();
-
     UnitPoint end = std::make_pair(modelSize, modelSize);
-    while (!traceUnit.empty() || point != end)
+
+    set<UnitPoint>::iterator uit = tracersalTracedUnit();
+    while (uit != traceUnit.end())
     {
-        transferModelLine(point.first, point.second);
+        transferModelLine(uit->first, uit->second);
+        uit = tracersalTracedUnit();
+    }
+
+    //同步线程
+    changeMutex.lock();
+    static unsigned threadSum = 0;
+    ++threadSum;
+    if(threadSum == THREADS)
+    {
+        synchroThread.wakeAll();//唤醒全部线程
+        threadSum = 0;
+    }
+    else {
+        synchroThread.wait(&changeMutex);//线程等待
+    }
+    changeMutex.unlock();
+
+    UnitPoint point = popTracedUnit();
+    while (point != end)
+    {
+        currentModel[point.first][point.second] = 0;
         point = popTracedUnit();
     }
 
 #ifndef M_NO_DEBUG
-        if(point != end)
-            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "Overflow line" << point;
+    if(point != end)
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "Overflow line" << point;
 #endif
 }
 
@@ -370,4 +399,107 @@ UnitPoint MatrixModel::popTracedUnit()
     traceUnit.erase(point);
 
     return point;
+}
+
+void MatrixModel::tracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace)
+{
+    if(traceOnOff)
+    {
+        MatrixSize around_1X = column != 0 ? column - 1 : modelSize - 1;
+        MatrixSize around_1Y = row != 0 ? row - 1 : modelSize - 1;
+
+        MatrixSize around_2X = column;
+        MatrixSize around_2Y = row != 0 ? row - 1 : modelSize - 1;
+
+        MatrixSize around_3X = column != modelSize - 1 ? column + 1 : 0;
+        MatrixSize around_3Y = row != 0 ? row - 1 : modelSize - 1;
+
+        MatrixSize around_4X = column != 0 ? column - 1 : modelSize - 1;
+        MatrixSize around_4Y = row;
+
+        MatrixSize around_6X = column != modelSize - 1 ? column + 1 : 0;
+        MatrixSize around_6Y = row;
+
+        MatrixSize around_7X = column != 0 ? column - 1 : modelSize - 1;
+        MatrixSize around_7Y = row != modelSize - 1 ? row + 1 : 0;
+
+        MatrixSize around_8X = column;
+        MatrixSize around_8Y = row != modelSize - 1 ? row + 1 : 0;
+
+        MatrixSize around_9X = column != modelSize - 1 ? column + 1 : 0;
+        MatrixSize around_9Y = row != modelSize - 1 ? row + 1 : 0;
+
+        trace.insert({around_1X, around_1Y});
+        trace.insert({around_2X, around_2Y});
+        trace.insert({around_3X, around_3Y});
+        trace.insert({around_4X, around_4Y});
+        trace.insert({column, row});
+        trace.insert({around_6X, around_6Y});
+        trace.insert({around_7X, around_7Y});
+        trace.insert({around_8X, around_8Y});
+        trace.insert({around_9X, around_9Y});
+    }
+}
+
+void MatrixModel::unTracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace)
+{
+    if(traceOnOff)
+    {
+        MatrixSize around_1X = column != 0 ? column - 1 : modelSize - 1;
+        MatrixSize around_1Y = row != 0 ? row - 1 : modelSize - 1;
+
+        MatrixSize around_2X = column;
+        MatrixSize around_2Y = row != 0 ? row - 1 : modelSize - 1;
+
+        MatrixSize around_3X = column != modelSize - 1 ? column + 1 : 0;
+        MatrixSize around_3Y = row != 0 ? row - 1 : modelSize - 1;
+
+        MatrixSize around_4X = column != 0 ? column - 1 : modelSize - 1;
+        MatrixSize around_4Y = row;
+
+        MatrixSize around_6X = column != modelSize - 1 ? column + 1 : 0;
+        MatrixSize around_6Y = row;
+
+        MatrixSize around_7X = column != 0 ? column - 1 : modelSize - 1;
+        MatrixSize around_7Y = row != modelSize - 1 ? row + 1 : 0;
+
+        MatrixSize around_8X = column;
+        MatrixSize around_8Y = row != modelSize - 1 ? row + 1 : 0;
+
+        MatrixSize around_9X = column != modelSize - 1 ? column + 1 : 0;
+        MatrixSize around_9Y = row != modelSize - 1 ? row + 1 : 0;
+
+        trace.erase({around_1X, around_1Y});
+        trace.erase({around_2X, around_2Y});
+        trace.erase({around_3X, around_3Y});
+        trace.erase({around_4X, around_4Y});
+        trace.erase({column, row});
+        trace.erase({around_6X, around_6Y});
+        trace.erase({around_7X, around_7Y});
+        trace.erase({around_8X, around_8Y});
+        trace.erase({around_9X, around_9Y});
+    }
+}
+
+set<UnitPoint>::iterator MatrixModel::tracersalTracedUnit()
+{
+    //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
+    QMutexLocker locker(&lineMutex);
+    static bool frist = true;
+    static set<UnitPoint>::iterator it;
+
+    if(frist)
+    {
+        it = traceUnit.begin();
+        frist = false;
+    }
+
+    if(it == traceUnit.end())
+    {
+        frist = true;
+        updateStatus = false;
+        return it;
+    }
+
+    return it++;
 }

@@ -3,7 +3,7 @@
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
-    model(4000, MatrixModel::LifeGameT),
+    model(4000, MatrixModel::LifeGame),
     view(model, this),
     modelResume(false),
     moveViewPos(),
@@ -21,7 +21,7 @@ MatrixController::MatrixController(QWidget *parent):
     mInfoLabel(new QLabel()),
     generation(0),
     unitInfo("XY = %1,%2    value = %3"),
-    mInfo(" Scale = 1:%2\t  Generation = %1\t")
+    mInfo(" Value = %3/%4\tScale = 1:%2\tGeneration = %1\t")
 {
     setWindowTitle(tr("MatrixCreator"));
     resize(840, 720);//默认大小
@@ -37,7 +37,10 @@ MatrixController::MatrixController(QWidget *parent):
     setCursor(pointCursor);
 
     //状态栏设置
-    mInfoLabel->setText(mInfo.arg(generation).arg(view.getUnitSize()));
+    mInfoLabel->setText(mInfo.arg(++generation)
+                        .arg(view.getUnitSize())
+                        .arg(dfv1)
+                        .arg(dfv2));
     mStatusBar->addPermanentWidget(mInfoLabel);
 }
 
@@ -46,7 +49,10 @@ void MatrixController::timerEvent(QTimerEvent *)
     if(modelResume)
     {
         (model.*(model.updateModel))();
-        mInfoLabel->setText(mInfo.arg(++generation).arg(view.getUnitSize()));
+        mInfoLabel->setText(mInfo.arg(++generation)
+                            .arg(view.getUnitSize())
+                            .arg(dfv1)
+                            .arg(dfv2));
         view.update();
     }
 }
@@ -399,10 +405,13 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     //X 交换两个默认值
     if(event->key() == Qt::Key_X)
     {
-        if(defaultValue == dfv1)
-            defaultValue = dfv1;
-        else
-            defaultValue = dfv2;
+        defaultValue = dfv2;
+        dfv2 = dfv1;
+        dfv1 = defaultValue;
+        mInfoLabel->setText(mInfo.arg(++generation)
+                            .arg(view.getUnitSize())
+                            .arg(dfv1)
+                            .arg(dfv2));
 
         return;
     }

@@ -44,6 +44,7 @@ private:
     MatrixSize getUpdateLine(MatrixSize interval, MatrixSize pos);
     bool currentStatus() const;//查询当前更新状态是否开启
     QMutex lineMutex;
+    QMutex changeMutex;
 
     //LifeGame模型迁变Transfer
     //依据当前模型四周的状态计算下一状态，储存在临时模型中，结束后把该临时模型指定为当前模型
@@ -58,7 +59,6 @@ private:
     void LFCalculusModelThread();//启用Calculus线程
     void changLineAroundValue(MatrixSize line);//记录当前行对四周的影响
     void startCalculus();//控制记录线程
-    QMutex changeMutex;
     QWaitCondition synchroThread;
     vector<vector<int> >cTempModel;
 
@@ -69,7 +69,9 @@ private:
     unsigned modelSize;
 
     //追踪unit
-    void tracedUnit(MatrixSize column, MatrixSize row);//开启追踪时才会记录坐标
+    void tracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace);//开启追踪时才会记录坐标
+    void unTracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace);
+    set<UnitPoint>::iterator tracersalTracedUnit();
     UnitPoint popTracedUnit();
     set<UnitPoint> traceUnit;
     set<UnitPoint> traceUnit2;
@@ -114,7 +116,7 @@ inline void MatrixModel::changeModelValue(MatrixSize x, MatrixSize y, int value)
 #endif
 
     currentModel[x][y] = value;
-    tracedUnit(x, y);
+    tracedUnit(x, y, traceUnit);
 }
 
 inline void MatrixModel::beginUpdate()
@@ -125,12 +127,6 @@ inline void MatrixModel::beginUpdate()
 inline bool MatrixModel::currentStatus() const
 {
     return updateStatus;
-}
-
-inline void MatrixModel::tracedUnit(MatrixSize column, MatrixSize row)
-{
-    if(traceOnOff)
-        traceUnit.insert({column, row});
 }
 
 #endif // MATRIXMODEL_H
