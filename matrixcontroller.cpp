@@ -3,7 +3,7 @@
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
-    model(4000, MatrixModel::LifeGame),
+    model(4000, MatrixModel::LifeGameCCL),
     view(model, this),
     modelResume(false),
     moveViewPos(),
@@ -504,12 +504,12 @@ void MatrixController::selectPattern(MatrixModel::ModelPattern p)
 {
     switch(p)
     {
-    case MatrixModel::LifeGame:
+    case MatrixModel::LifeGameCCL:
         dfv1 = 3;
         dfv2 = 0;
         defaultValue = dfv1;
         break;
-    case MatrixModel::LifeGameT:
+    case MatrixModel::LifeGameTSF:
         dfv1 = 1;
         dfv2 = 0;
         defaultValue = dfv1;

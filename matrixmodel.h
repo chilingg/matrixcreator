@@ -15,15 +15,17 @@
 #endif
 
 using std::set;
+using std::map;
 using std::pair;
+using std::make_pair;
 using std::vector;
 using MatrixSize = vector<int>::size_type;
-using UnitPoint = pair<MatrixSize, MatrixSize>;
+using TraceLine = pair<MatrixSize, set<MatrixSize>>;
 
 class MatrixModel
 {
 public:
-    enum ModelPattern{ EmptyPattern, LifeGameT, LifeGame };
+    enum ModelPattern{ EmptyPattern, LifeGameTSF, LifeGameCCL, LifeGameTRC };
 
     MatrixModel(unsigned widht = 0, ModelPattern pattern = EmptyPattern);
     ~MatrixModel();
@@ -62,21 +64,25 @@ private:
     QWaitCondition synchroThread;
     vector<vector<int> >cTempModel;
 
+    //LifeGame模型追踪unit
+    //追踪有值的单元，忽略其他
+    void LFTraceModelThread();//启用Trace线程
+    void changTraceAroundValue(TraceLine line);//记录追踪单元对四周的影响
+    void startTrace();//送进线程中的控制函数
+    void tracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);//开启追踪时才会记录坐标
+    void unTracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);
+    TraceLine popTracedLine(size_t index);
+    map<MatrixSize, set<MatrixSize>> traceUnit[4];
+    map<MatrixSize, set<MatrixSize>> TempTrace[4];
+    vector<vector<int> >trTempModel;
+    bool traceOnOff;
+
     unsigned THREADS;
     vector<QFuture<void> > future;
     vector<vector<int> >currentModel;
     ModelPattern modelPattern;
     unsigned modelSize;
 
-    //追踪unit
-    void tracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace);//开启追踪时才会记录坐标
-    void unTracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace);
-    set<UnitPoint>::iterator tracersalTracedUnit();
-    UnitPoint popTracedUnit();
-    set<UnitPoint> traceUnit;
-    set<UnitPoint> traceUnit2;
-    bool traceOnOff;
-    
     bool updateStatus;
 
 #ifndef M_NO_DEBUG

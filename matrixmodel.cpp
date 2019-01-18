@@ -1,12 +1,12 @@
 #include "matrixmodel.h"
 
 MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
+    traceOnOff(false),
     THREADS(std::thread::hardware_concurrency()),
     future(THREADS),	//获取cpu核数
     currentModel(size, vector<int>(size, 0)),
     modelPattern(EmptyPattern),
     modelSize(size),
-    traceOnOff(false),
     updateStatus(false)
 {
     modelPattern = switchModel(pattern);
@@ -50,13 +50,22 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
 {
     //结束之前的模式
     switch (modelPattern) {
-    case LifeGameT:
+    case LifeGameTSF:
         tTempModel.clear();
-        traceUnit.clear();
+        traceUnit[0].clear();
+        traceUnit[1].clear();
+        traceUnit[2].clear();
         traceOnOff = false;
         break;
-    case LifeGame:
+    case LifeGameCCL:
         cTempModel.clear();
+        break;
+    case LifeGameTRC:
+        trTempModel.clear();
+        traceUnit[0].clear();
+        traceUnit[1].clear();
+        traceUnit[2].clear();
+        traceOnOff = false;
         break;
     default:
         break;
@@ -64,14 +73,19 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
 
     //开始新的模式
     switch (after) {
-    case LifeGameT:
+    case LifeGameTSF:
         tTempModel.assign(modelSize, vector<int>(modelSize, 0));
         traceOnOff = true;
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
-    case LifeGame:
+    case LifeGameCCL:
         cTempModel.assign(modelSize, vector<int>(modelSize, 0));
         updateModel = &MatrixModel::LFCalculusModelThread;
+        break;
+    case LifeGameTRC:
+        trTempModel.assign(modelSize, vector<int>(modelSize, 0));
+        traceOnOff = true;
+        updateModel = &MatrixModel::LFTraceModelThread;
         break;
     default:
         updateModel = nullptr;
@@ -136,7 +150,7 @@ void MatrixModel::LFTransferModelThread()
 
     //把current指向新模型，temp指向旧模型
     swap(currentModel, tTempModel);
-    swap(traceUnit, traceUnit2);
+    swap(traceUnit, TempTrace);
 }
 
 void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
@@ -154,7 +168,7 @@ void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
     case 3:
         tTempModel[column][row] = 1;
         changeMutex.lock();
-        tracedUnit(column, row, traceUnit2);
+        tracedUnit(column, row, TempTrace);
         changeMutex.unlock();
         break;
     case 4:
@@ -169,7 +183,7 @@ void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
     case 12:
     case 13:
         changeMutex.lock();
-        tracedUnit(column, row, traceUnit2);
+        tracedUnit(column, row, TempTrace);
         changeMutex.unlock();
         break;
     case 14:
@@ -213,11 +227,11 @@ void MatrixModel::startTransfer()
     }
     changeMutex.unlock();
 
-    UnitPoint point = popTracedUnit();
+    UnitPoint point = popTracedLine();
     while (point != end)
     {
         currentModel[point.first][point.second] = 0;
-        point = popTracedUnit();
+        point = popTracedLine();
     }
 
 #ifndef M_NO_DEBUG
@@ -385,26 +399,36 @@ void MatrixModel::startCalculus()
     }while (++offset < intarval);
 }
 
-UnitPoint MatrixModel::popTracedUnit()
+void MatrixModel::LFTraceModelThread()
 {
-    //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
-    QMutexLocker locker(&lineMutex);
-
-    if(traceUnit.empty())
+    for(MatrixSize i = 0; i < THREADS; ++i)
     {
-        return {modelSize, modelSize};
+        future[i] = QtConcurrent::run(this, &MatrixModel::startTrace);
+    }
+    for(MatrixSize i = 0; i < THREADS; ++i)
+    {
+        future[i].waitForFinished();//等待所有线程结束
     }
 
-    UnitPoint point = *traceUnit.begin();
-    traceUnit.erase(point);
-
-    return point;
+    //把current指向新模型，temp指向旧模型
+    swap(currentModel, trTempModel);
+    swap(traceUnit, TempTrace);
 }
 
-void MatrixModel::tracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace)
+void MatrixModel::changTraceAroundValue(TraceLine line)
 {
-    if(traceOnOff)
+    MatrixSize column = line.first;
+
+    for(const auto &row : line.second)
     {
+        if(currentModel[column][row] != 3 &&
+                currentModel[column][row] != 12 &&
+                currentModel[column][row] != 13)
+        {
+            currentModel[column][row] = 0;
+            continue;
+        }
+
         MatrixSize around_1X = column != 0 ? column - 1 : modelSize - 1;
         MatrixSize around_1Y = row != 0 ? row - 1 : modelSize - 1;
 
@@ -429,77 +453,132 @@ void MatrixModel::tracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &
         MatrixSize around_9X = column != modelSize - 1 ? column + 1 : 0;
         MatrixSize around_9Y = row != modelSize - 1 ? row + 1 : 0;
 
-        trace.insert({around_1X, around_1Y});
-        trace.insert({around_2X, around_2Y});
-        trace.insert({around_3X, around_3Y});
-        trace.insert({around_4X, around_4Y});
-        trace.insert({column, row});
-        trace.insert({around_6X, around_6Y});
-        trace.insert({around_7X, around_7Y});
-        trace.insert({around_8X, around_8Y});
-        trace.insert({around_9X, around_9Y});
+        trTempModel[around_1X][around_1Y] += 1;
+        trTempModel[around_2X][around_2Y] += 1;
+        trTempModel[around_3X][around_3Y] += 1;
+        trTempModel[around_4X][around_4Y] += 1;
+        trTempModel[column][row] += 10; //值大于等于10则表示对应current有值
+        trTempModel[around_6X][around_6Y] += 1;
+        trTempModel[around_7X][around_7Y] += 1;
+        trTempModel[around_8X][around_8Y] += 1;
+        trTempModel[around_9X][around_9Y] += 1;
+
+        //追踪有值的单元
+        size_t indexL = around_2X % 3;
+        size_t indexM = column % 3;
+        size_t indexR = around_8X % 3;
+        TempTrace[indexL].insert({around_1X, around_1Y});
+        TempTrace[indexM].insert({around_2X, around_2Y});
+        TempTrace[indexR].insert({around_3X, around_3Y});
+        TempTrace[indexL].insert({around_4X, around_4Y});
+        TempTrace[indexM].insert({column, row});
+        TempTrace[indexR].insert({around_6X, around_6Y});
+        TempTrace[indexL].insert({around_7X, around_7Y});
+        TempTrace[indexM].insert({around_8X, around_8Y});
+        TempTrace[indexR].insert({around_9X, around_9Y});
+
+#ifndef M_NO_DEBUG
+        if(cTempModel[column][row] > 18)
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                     << "Unclear!" << column << row << cTempModel[column][row];
+#endif
+        currentModel[column][row] = 0;
     }
 }
 
-void MatrixModel::unTracedUnit(MatrixSize column, MatrixSize row, set<UnitPoint> &trace)
+void MatrixModel::startTrace()
 {
-    if(traceOnOff)
-    {
-        MatrixSize around_1X = column != 0 ? column - 1 : modelSize - 1;
-        MatrixSize around_1Y = row != 0 ? row - 1 : modelSize - 1;
+    static size_t index = 0;
+    static unsigned threadSum = 0;
+    static QMutex mutex;
+    TraceLine end = make_pair(modelSize, set<MatrixSize>());
 
-        MatrixSize around_2X = column;
-        MatrixSize around_2Y = row != 0 ? row - 1 : modelSize - 1;
+    do{
+        TraceLine line = popTracedLine(index);
+        while (line != end)
+        {
+            changTraceAroundValue(line);
+            line = popTracedLine(index);
+        }
 
-        MatrixSize around_3X = column != modelSize - 1 ? column + 1 : 0;
-        MatrixSize around_3Y = row != 0 ? row - 1 : modelSize - 1;
+        //同步线程
+        mutex.lock();
+        ++threadSum;
+        if(threadSum == THREADS)
+        {
+            threadSum = 0;
+            synchroThread.wakeAll();//唤醒全部线程
 
-        MatrixSize around_4X = column != 0 ? column - 1 : modelSize - 1;
-        MatrixSize around_4Y = row;
+            //例外的列最多维两列，用一个线程处理
+            if(index == 2)
+            {
+                TraceLine line = popTracedLine(3);
+                while (line != end)
+                {
+                    changTraceAroundValue(line);
+                    line = popTracedLine(3);
+                }
+            }
+        }
+        else {
+            synchroThread.wait(&changeMutex);//线程等待
+        }
+        mutex.unlock();
 
-        MatrixSize around_6X = column != modelSize - 1 ? column + 1 : 0;
-        MatrixSize around_6Y = row;
-
-        MatrixSize around_7X = column != 0 ? column - 1 : modelSize - 1;
-        MatrixSize around_7Y = row != modelSize - 1 ? row + 1 : 0;
-
-        MatrixSize around_8X = column;
-        MatrixSize around_8Y = row != modelSize - 1 ? row + 1 : 0;
-
-        MatrixSize around_9X = column != modelSize - 1 ? column + 1 : 0;
-        MatrixSize around_9Y = row != modelSize - 1 ? row + 1 : 0;
-
-        trace.erase({around_1X, around_1Y});
-        trace.erase({around_2X, around_2Y});
-        trace.erase({around_3X, around_3Y});
-        trace.erase({around_4X, around_4Y});
-        trace.erase({column, row});
-        trace.erase({around_6X, around_6Y});
-        trace.erase({around_7X, around_7Y});
-        trace.erase({around_8X, around_8Y});
-        trace.erase({around_9X, around_9Y});
-    }
+    } while(++index < 3);
 }
 
-set<UnitPoint>::iterator MatrixModel::tracersalTracedUnit()
+TraceLine MatrixModel::popTracedLine(size_t index)
 {
     //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
     QMutexLocker locker(&lineMutex);
-    static bool frist = true;
-    static set<UnitPoint>::iterator it;
 
-    if(frist)
+    if(traceUnit[index].empty())
     {
-        it = traceUnit.begin();
-        frist = false;
+        return make_pair(modelSize, set<MatrixSize>());
     }
 
-    if(it == traceUnit.end())
+    TraceLine line = *traceUnit[index].begin();
+    traceUnit[index].erase(line.first);
+
+    return line;
+}
+
+void MatrixModel::tracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize>> *trace)
+{
+    //Size非3倍数时，会对首列干扰的尾列
+    if(column >= (modelSize/3)*3)
     {
-        frist = true;
-        updateStatus = false;
-        return it;
+        auto it = trace[3].find(column);
+        if(it != trace[3].end())
+        {
+            it->second.insert(row);
+        }
+        else
+        {
+            trace[3].insert(make_pair(column, set<MatrixSize>({row})));
+        }
+        return;
     }
 
-    return it++;
+    size_t i = column % 3;
+    auto it = trace[i].find(column);
+    if(it != trace[i].end())
+    {
+        it->second.insert(row);
+    }
+    else
+    {
+        trace[i].insert(make_pair(column, set<MatrixSize>({row})));
+    }
+}
+
+void MatrixModel::unTracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize>> *trace)
+{
+    size_t i = column % 3;
+    auto it = trace[i].find(column);
+    if(it != trace[i].end())
+    {
+        it->second.erase(row);
+    }
 }
