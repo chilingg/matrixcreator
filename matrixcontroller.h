@@ -35,6 +35,7 @@ protected:
 
 private:
     void clearSelectBox();
+    void updateMatrixInfo();
     void selectPattern(MatrixModel::ModelPattern p);
 
     MatrixModel model;
@@ -59,6 +60,7 @@ private:
     long long unsigned generation;
     const QString unitInfo;
     const QString mInfo;
+    const unsigned THREADS;
 };
 
 inline void MatrixController::clearSelectBox()
@@ -67,6 +69,15 @@ inline void MatrixController::clearSelectBox()
     {
         view.selectUnits(QRect());
     }
+}
+
+inline void MatrixController::updateMatrixInfo()
+{
+    mInfoLabel->setText(mInfo.arg(++generation)
+                        .arg(view.getUnitSize())
+                        .arg(dfv1)
+                        .arg(dfv2)
+                        .arg(THREADS));
 }
 
 

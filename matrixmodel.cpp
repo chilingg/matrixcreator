@@ -32,11 +32,9 @@ void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, Matrix
         {
             if(currentModel[x+i][y+j] != 0)
             {
-                unTracedUnit(x+i, y+j, traceUnit);
+                unTracedUnit(x+i, y+j, tracedUnit);
                 currentModel[x+i][y+j] = 0;
             }
-            if(tTempModel[x+i][y+j] != 0)
-                tTempModel[x+i][y+j] = 0;
         }
     }
 }
@@ -52,20 +50,17 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     switch (modelPattern) {
     case LifeGameTSF:
         tTempModel.clear();
-        traceUnit[0].clear();
-        traceUnit[1].clear();
-        traceUnit[2].clear();
-        traceOnOff = false;
         break;
     case LifeGameCCL:
         cTempModel.clear();
         break;
     case LifeGameTRC:
         trTempModel.clear();
-        traceUnit[0].clear();
-        traceUnit[1].clear();
-        traceUnit[2].clear();
+        tracedUnit[0].clear();
+        tracedUnit[1].clear();
+        tracedUnit[2].clear();
         traceOnOff = false;
+        THREADS = std::thread::hardware_concurrency();
         break;
     default:
         break;
@@ -75,7 +70,6 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
     switch (after) {
     case LifeGameTSF:
         tTempModel.assign(modelSize, vector<int>(modelSize, 0));
-        traceOnOff = true;
         updateModel = &MatrixModel::LFTransferModelThread;
         break;
     case LifeGameCCL:
@@ -84,8 +78,9 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
         break;
     case LifeGameTRC:
         trTempModel.assign(modelSize, vector<int>(modelSize, 0));
-        traceOnOff = true;
         updateModel = &MatrixModel::LFTraceModelThread;
+        traceOnOff = true;
+        THREADS = 1;
         break;
     default:
         updateModel = nullptr;
@@ -139,6 +134,8 @@ MatrixSize MatrixModel::getUpdateLine(MatrixSize interval, MatrixSize pos)
 
 void MatrixModel::LFTransferModelThread()
 {
+    beginUpdate();
+
     for(MatrixSize i = 0; i < THREADS; ++i)
     {
         future[i] = QtConcurrent::run(this, &MatrixModel::startTransfer);
@@ -147,97 +144,84 @@ void MatrixModel::LFTransferModelThread()
     {
         future[i].waitForFinished();//等待所有线程结束
     }
+#ifndef M_NO_DEBUG
+    if(debug != modelSize)
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "Thread runs:" << modelSize - debug;
+    debug = 0;
+#endif
 
     //把current指向新模型，temp指向旧模型
     swap(currentModel, tTempModel);
-    swap(traceUnit, TempTrace);
 }
 
-void MatrixModel::transferModelLine(MatrixSize column, MatrixSize row)
+void MatrixModel::transferModelLine(MatrixSize line)
 {
-    int aroundValue = getAroundValue(column, row);
-
-    //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
-    tTempModel[column][row] = currentModel[column][row];
-    switch (aroundValue)
-    {
-    case 0:
-    case 1:
-    case 2:
-        break;
-    case 3:
-        tTempModel[column][row] = 1;
-        changeMutex.lock();
-        tracedUnit(column, row, TempTrace);
-        changeMutex.unlock();
-        break;
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 10:
-    case 11:
-        tTempModel[column][row] = 0;
-        break;
-    case 12:
-    case 13:
-        changeMutex.lock();
-        tracedUnit(column, row, TempTrace);
-        changeMutex.unlock();
-        break;
-    case 14:
-    case 15:
-    case 16:
-    case 17:
-    case 18:
-        tTempModel[column][row] = 0;
-        break;
-    default:
 #ifndef M_NO_DEBUG
-        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                 << "AroundValue Over range!" << aroundValue ;
+    changeMutex.lock();
+    ++debug;
+    changeMutex.unlock();
 #endif
-        break;
+
+    for(MatrixSize j = 0; j < modelSize; ++j)
+    {
+        int aroundValue = getAroundValue(line, j);
+
+        //计算出的模型存在tempModel中，避免影响正在进行的getAroundValue计算
+        tTempModel[line][j] = currentModel[line][j];
+        switch (aroundValue)
+        {
+        case 0:
+        case 1:
+        case 2:
+            break;
+        case 3:
+            tTempModel[line][j] = 1;
+            break;
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            break;
+        case 10:
+        case 11:
+            tTempModel[line][j] = 0;
+            break;
+        case 12:
+        case 13:
+            break;
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 18:
+            tTempModel[line][j] = 0;
+            break;
+        default:
+#ifndef M_NO_DEBUG
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                     << "AroundValue Over range!" << aroundValue ;
+#endif
+            break;
+        }
     }
 }
 
 void MatrixModel::startTransfer()
 {
-    UnitPoint end = std::make_pair(modelSize, modelSize);
+    MatrixSize line = getUpdateLine();
 
-    set<UnitPoint>::iterator uit = tracersalTracedUnit();
-    while (uit != traceUnit.end())
+    while (currentStatus() || line != 0)
     {
-        transferModelLine(uit->first, uit->second);
-        uit = tracersalTracedUnit();
-    }
-
-    //同步线程
-    changeMutex.lock();
-    static unsigned threadSum = 0;
-    ++threadSum;
-    if(threadSum == THREADS)
-    {
-        synchroThread.wakeAll();//唤醒全部线程
-        threadSum = 0;
-    }
-    else {
-        synchroThread.wait(&changeMutex);//线程等待
-    }
-    changeMutex.unlock();
-
-    UnitPoint point = popTracedLine();
-    while (point != end)
-    {
-        currentModel[point.first][point.second] = 0;
-        point = popTracedLine();
+        transferModelLine(line);
+        line = getUpdateLine();
     }
 
 #ifndef M_NO_DEBUG
-    if(point != end)
-        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                 << "Overflow line" << point;
+        if(line != 0)
+            qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                     << "Overflow line" << line;
 #endif
 }
 
@@ -412,7 +396,7 @@ void MatrixModel::LFTraceModelThread()
 
     //把current指向新模型，temp指向旧模型
     swap(currentModel, trTempModel);
-    swap(traceUnit, TempTrace);
+    swap(tracedUnit, tempTrace);
 }
 
 void MatrixModel::changTraceAroundValue(TraceLine line)
@@ -429,58 +413,32 @@ void MatrixModel::changTraceAroundValue(TraceLine line)
             continue;
         }
 
-        MatrixSize around_1X = column != 0 ? column - 1 : modelSize - 1;
-        MatrixSize around_1Y = row != 0 ? row - 1 : modelSize - 1;
+        MatrixSize leftX = column != 0 ? column - 1 : modelSize - 1;
+        MatrixSize rightX = column != modelSize - 1 ? column + 1 : 0;
+        MatrixSize topY = row != 0 ? row - 1 : modelSize - 1;
+        MatrixSize bottomY = row != modelSize - 1 ? row + 1 : 0;
 
-        MatrixSize around_2X = column;
-        MatrixSize around_2Y = row != 0 ? row - 1 : modelSize - 1;
+        trTempModel[leftX][topY] += 1;
+        trTempModel[column][topY] += 1;
+        trTempModel[rightX][topY] += 1;
 
-        MatrixSize around_3X = column != modelSize - 1 ? column + 1 : 0;
-        MatrixSize around_3Y = row != 0 ? row - 1 : modelSize - 1;
-
-        MatrixSize around_4X = column != 0 ? column - 1 : modelSize - 1;
-        MatrixSize around_4Y = row;
-
-        MatrixSize around_6X = column != modelSize - 1 ? column + 1 : 0;
-        MatrixSize around_6Y = row;
-
-        MatrixSize around_7X = column != 0 ? column - 1 : modelSize - 1;
-        MatrixSize around_7Y = row != modelSize - 1 ? row + 1 : 0;
-
-        MatrixSize around_8X = column;
-        MatrixSize around_8Y = row != modelSize - 1 ? row + 1 : 0;
-
-        MatrixSize around_9X = column != modelSize - 1 ? column + 1 : 0;
-        MatrixSize around_9Y = row != modelSize - 1 ? row + 1 : 0;
-
-        trTempModel[around_1X][around_1Y] += 1;
-        trTempModel[around_2X][around_2Y] += 1;
-        trTempModel[around_3X][around_3Y] += 1;
-        trTempModel[around_4X][around_4Y] += 1;
+        trTempModel[leftX][row] += 1;
         trTempModel[column][row] += 10; //值大于等于10则表示对应current有值
-        trTempModel[around_6X][around_6Y] += 1;
-        trTempModel[around_7X][around_7Y] += 1;
-        trTempModel[around_8X][around_8Y] += 1;
-        trTempModel[around_9X][around_9Y] += 1;
+        trTempModel[rightX][row] += 1;
+
+        trTempModel[leftX][bottomY] += 1;
+        trTempModel[column][bottomY] += 1;
+        trTempModel[rightX][bottomY] += 1;
 
         //追踪有值的单元
-        size_t indexL = around_2X % 3;
-        size_t indexM = column % 3;
-        size_t indexR = around_8X % 3;
-        TempTrace[indexL].insert({around_1X, around_1Y});
-        TempTrace[indexM].insert({around_2X, around_2Y});
-        TempTrace[indexR].insert({around_3X, around_3Y});
-        TempTrace[indexL].insert({around_4X, around_4Y});
-        TempTrace[indexM].insert({column, row});
-        TempTrace[indexR].insert({around_6X, around_6Y});
-        TempTrace[indexL].insert({around_7X, around_7Y});
-        TempTrace[indexM].insert({around_8X, around_8Y});
-        TempTrace[indexR].insert({around_9X, around_9Y});
+        tracedUnitTMB(leftX, row, tempTrace);
+        tracedUnitTMB(column, row, tempTrace);
+        tracedUnitTMB(rightX, row, tempTrace);
 
 #ifndef M_NO_DEBUG
-        if(cTempModel[column][row] > 18)
+        if(trTempModel[column][row] > 18)
             qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
-                     << "Unclear!" << column << row << cTempModel[column][row];
+                     << "Unclear!" << column << row << trTempModel[column][row];
 #endif
         currentModel[column][row] = 0;
     }
@@ -488,10 +446,10 @@ void MatrixModel::changTraceAroundValue(TraceLine line)
 
 void MatrixModel::startTrace()
 {
-    static size_t index = 0;
     static unsigned threadSum = 0;
     static QMutex mutex;
     TraceLine end = make_pair(modelSize, set<MatrixSize>());
+    size_t index = 0;
 
     do{
         TraceLine line = popTracedLine(index);
@@ -521,7 +479,7 @@ void MatrixModel::startTrace()
             }
         }
         else {
-            synchroThread.wait(&changeMutex);//线程等待
+            synchroThread.wait(&mutex);//线程等待
         }
         mutex.unlock();
 
@@ -533,18 +491,18 @@ TraceLine MatrixModel::popTracedLine(size_t index)
     //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
     QMutexLocker locker(&lineMutex);
 
-    if(traceUnit[index].empty())
+    if(tracedUnit[index].empty())
     {
         return make_pair(modelSize, set<MatrixSize>());
     }
 
-    TraceLine line = *traceUnit[index].begin();
-    traceUnit[index].erase(line.first);
+    TraceLine line = *tracedUnit[index].begin();
+    tracedUnit[index].erase(line.first);
 
     return line;
 }
 
-void MatrixModel::tracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize>> *trace)
+void MatrixModel::traceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize>> *trace)
 {
     //Size非3倍数时，会对首列干扰的尾列
     if(column >= (modelSize/3)*3)
@@ -581,4 +539,43 @@ void MatrixModel::unTracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize
     {
         it->second.erase(row);
     }
+}
+
+void MatrixModel::tracedUnitTMB(MatrixSize column, MatrixSize rowM, map<MatrixSize, set<MatrixSize> > *trace)
+{
+    MatrixSize rowT = rowM != 0 ? rowM - 1 : modelSize - 1;
+    MatrixSize rowB = rowM != modelSize - 1 ? rowM + 1 : 0;
+
+    //Size非3倍数时，会对首列干扰的尾列
+    if(column >= (modelSize/3)*3)
+    {
+        auto it = trace[3].insert(make_pair(column, set<MatrixSize>({rowM})));
+        if(it.second)
+        {
+            it.first->second.emplace(rowT);
+            it.first->second.emplace(rowB);
+        }
+        else
+        {
+            it.first->second.emplace(rowM);
+            it.first->second.emplace(rowT);
+            it.first->second.emplace(rowB);
+        }
+        return;
+    }
+
+    size_t i = column % 3;
+    auto it = trace[i].insert(make_pair(column, set<MatrixSize>({rowM})));
+    if(it.second)
+    {
+        it.first->second.emplace(rowT);
+        it.first->second.emplace(rowB);
+    }
+    else
+    {
+        it.first->second.emplace(rowM);
+        it.first->second.emplace(rowT);
+        it.first->second.emplace(rowB);
+    }
+    return;
 }

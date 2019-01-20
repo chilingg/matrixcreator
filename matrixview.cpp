@@ -93,11 +93,14 @@ void MatrixView::switchColorPattern(MatrixModel::ModelPattern pattern)
 {
     switch(pattern)
     {
+    case MatrixModel::LifeGameTSF:
+        valueToColor = tValueToColor;
+        break;
     case MatrixModel::LifeGameCCL:
         valueToColor = cValueToColor;
         break;
-    case MatrixModel::LifeGameTSF:
-        valueToColor = tValueToColor;
+    case MatrixModel::LifeGameTRC:
+        valueToColor = cValueToColor;
         break;
     default:
         valueToColor = nullptr;
