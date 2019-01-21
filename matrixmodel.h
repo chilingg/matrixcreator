@@ -68,16 +68,21 @@ private:
     //LifeGame模型追踪unit
     //追踪有值的单元，忽略其他
     void LFTraceModelThread();//启用Trace线程
-    void changTraceAroundValue(TraceLine line);//记录追踪单元对四周的影响
+    void changTraceAroundValue(map<MatrixSize, set<MatrixSize>>::const_iterator lineIt);//记录追踪单元对四周的影响
+    void recordTraceAroundValue(size_t index);//把tempTrace中记录的unit及其四周记录进traceUnit
     void startTrace();//送进线程中的控制函数
     void traceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);//开启追踪时才会记录坐标
-    void unTracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);
-    void tracedUnitTMB(MatrixSize column, MatrixSize rowM, map<MatrixSize, set<MatrixSize> > *trace);
+    void unTraceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);
+    void traceUnitTMB(MatrixSize column, MatrixSize rowM, map<MatrixSize, set<MatrixSize> > *trace);
+    void traceUnitAround(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);
     TraceLine popTracedLine(size_t index);
+    map<MatrixSize, set<MatrixSize>>::const_iterator getTracedLine(size_t index);
     map<MatrixSize, set<MatrixSize>> tracedUnit[4];
-    map<MatrixSize, set<MatrixSize>> tempTrace[4];
+    map<MatrixSize, set<MatrixSize>> tempTraceAround[4];
     vector<vector<int> >trTempModel;
+    QFuture<void> recordFuture;
     bool traceOnOff;
+    bool record;
 
     unsigned THREADS;
     vector<QFuture<void> > future;

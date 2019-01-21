@@ -462,6 +462,7 @@ QRgb MatrixView::cValueToColor(int value)
     case 18:
         break;
     default:
+        color = MatrixColor::WARNING.rgb();
 #ifndef M_NO_DEBUG
         qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                  << "Value Over range!" << value ;

@@ -2,6 +2,7 @@
 
 MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     traceOnOff(false),
+    record(false),
     THREADS(std::thread::hardware_concurrency()),
     future(THREADS),	//获取cpu核数
     currentModel(size, vector<int>(size, 0)),
@@ -32,7 +33,7 @@ void MatrixModel::clearUnit(MatrixSize x, MatrixSize y, MatrixSize widht, Matrix
         {
             if(currentModel[x+i][y+j] != 0)
             {
-                unTracedUnit(x+i, y+j, tracedUnit);
+                unTraceUnit(x+i, y+j, tracedUnit);
                 currentModel[x+i][y+j] = 0;
             }
         }
@@ -60,7 +61,6 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
         tracedUnit[1].clear();
         tracedUnit[2].clear();
         traceOnOff = false;
-        THREADS = std::thread::hardware_concurrency();
         break;
     default:
         break;
@@ -80,7 +80,6 @@ MatrixModel::ModelPattern MatrixModel::switchModel(MatrixModel::ModelPattern aft
         trTempModel.assign(modelSize, vector<int>(modelSize, 0));
         updateModel = &MatrixModel::LFTraceModelThread;
         traceOnOff = true;
-        THREADS = 1;
         break;
     default:
         updateModel = nullptr;
@@ -385,6 +384,7 @@ void MatrixModel::startCalculus()
 
 void MatrixModel::LFTraceModelThread()
 {
+    beginUpdate();
     for(MatrixSize i = 0; i < THREADS; ++i)
     {
         future[i] = QtConcurrent::run(this, &MatrixModel::startTrace);
@@ -394,16 +394,17 @@ void MatrixModel::LFTraceModelThread()
         future[i].waitForFinished();//等待所有线程结束
     }
 
+    recordFuture.waitForFinished();
     //把current指向新模型，temp指向旧模型
     swap(currentModel, trTempModel);
-    swap(tracedUnit, tempTrace);
+    swap(tracedUnit, tempTraceAround);
 }
 
-void MatrixModel::changTraceAroundValue(TraceLine line)
+void MatrixModel::changTraceAroundValue(map<MatrixSize, set<MatrixSize>>::const_iterator lineIt)
 {
-    MatrixSize column = line.first;
+    MatrixSize column = lineIt->first;
 
-    for(const auto &row : line.second)
+    for(const auto &row : lineIt->second)
     {
         if(currentModel[column][row] != 3 &&
                 currentModel[column][row] != 12 &&
@@ -430,33 +431,44 @@ void MatrixModel::changTraceAroundValue(TraceLine line)
         trTempModel[column][bottomY] += 1;
         trTempModel[rightX][bottomY] += 1;
 
-        //追踪有值的单元
-        tracedUnitTMB(leftX, row, tempTrace);
-        tracedUnitTMB(column, row, tempTrace);
-        tracedUnitTMB(rightX, row, tempTrace);
-
 #ifndef M_NO_DEBUG
         if(trTempModel[column][row] > 18)
             qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
                      << "Unclear!" << column << row << trTempModel[column][row];
 #endif
-        currentModel[column][row] = 0;
+        //currentModel[column][row] = 0;
     }
+}
+
+void MatrixModel::recordTraceAroundValue(size_t index)
+{
+    for(auto i : tracedUnit[index])
+    {
+        for(auto j : i.second)
+        {
+            int &value = currentModel[i.first][j];
+            if(value == 3 || value == 12 || value == 13)
+            {
+                traceUnitAround(i.first, j, tempTraceAround);
+            }
+            value = 0;
+        }
+    }
+    tracedUnit[index].clear();
 }
 
 void MatrixModel::startTrace()
 {
     static unsigned threadSum = 0;
     static QMutex mutex;
-    TraceLine end = make_pair(modelSize, set<MatrixSize>());
     size_t index = 0;
 
     do{
-        TraceLine line = popTracedLine(index);
-        while (line != end)
+        auto line = getTracedLine(index);
+        while (currentStatus() || line != tracedUnit[index].cend())
         {
             changTraceAroundValue(line);
-            line = popTracedLine(index);
+            line = getTracedLine(index);
         }
 
         //同步线程
@@ -465,18 +477,28 @@ void MatrixModel::startTrace()
         if(threadSum == THREADS)
         {
             threadSum = 0;
-            synchroThread.wakeAll();//唤醒全部线程
 
             //例外的列最多维两列，用一个线程处理
-            if(index == 2)
+            if(!tracedUnit[3].empty())
             {
-                TraceLine line = popTracedLine(3);
-                while (line != end)
+                beginUpdate();
+                auto line = getTracedLine(index);
+                while (currentStatus() || line != tracedUnit[3].cend())
                 {
                     changTraceAroundValue(line);
-                    line = popTracedLine(3);
+                    line = getTracedLine(3);
                 }
+                recordFuture.waitForFinished();
+                recordFuture = QtConcurrent::run(this, &MatrixModel::recordTraceAroundValue, 3);
             }
+
+            //等待直到上一次的记录结束
+            recordFuture.waitForFinished();
+            //开启本次记录
+            recordFuture = QtConcurrent::run(this, &MatrixModel::recordTraceAroundValue, index);
+
+            beginUpdate();
+            synchroThread.wakeAll();//唤醒全部线程
         }
         else {
             synchroThread.wait(&mutex);//线程等待
@@ -500,6 +522,34 @@ TraceLine MatrixModel::popTracedLine(size_t index)
     tracedUnit[index].erase(line.first);
 
     return line;
+}
+
+map<MatrixSize, set<MatrixSize>>::const_iterator MatrixModel::getTracedLine(size_t index)
+{
+    //QMutexLocker创建时锁定资源，析构时解锁后其它线程才能进入
+    QMutexLocker locker(&lineMutex);
+    static map<MatrixSize, set<MatrixSize>>::const_iterator it;
+    static bool frist = true;
+
+    if(!updateStatus)
+    {
+        return tracedUnit[index].cend();
+    }
+
+    if(frist)
+    {
+        it = tracedUnit[index].cbegin();
+        frist = false;
+    }
+
+    if(it == tracedUnit[index].cend())
+    {
+        updateStatus = false;
+        frist = true;
+        return it;
+    }
+
+    return it++;
 }
 
 void MatrixModel::traceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize>> *trace)
@@ -531,7 +581,7 @@ void MatrixModel::traceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, s
     }
 }
 
-void MatrixModel::unTracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize>> *trace)
+void MatrixModel::unTraceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize>> *trace)
 {
     size_t i = column % 3;
     auto it = trace[i].find(column);
@@ -541,7 +591,7 @@ void MatrixModel::unTracedUnit(MatrixSize column, MatrixSize row, map<MatrixSize
     }
 }
 
-void MatrixModel::tracedUnitTMB(MatrixSize column, MatrixSize rowM, map<MatrixSize, set<MatrixSize> > *trace)
+void MatrixModel::traceUnitTMB(MatrixSize column, MatrixSize rowM, map<MatrixSize, set<MatrixSize> > *trace)
 {
     MatrixSize rowT = rowM != 0 ? rowM - 1 : modelSize - 1;
     MatrixSize rowB = rowM != modelSize - 1 ? rowM + 1 : 0;
@@ -578,4 +628,14 @@ void MatrixModel::tracedUnitTMB(MatrixSize column, MatrixSize rowM, map<MatrixSi
         it.first->second.emplace(rowB);
     }
     return;
+}
+
+void MatrixModel::traceUnitAround(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace)
+{
+    MatrixSize leftColumn = column != 0 ? column - 1 : modelSize - 1;
+    MatrixSize rightColumn = column != modelSize - 1 ? column + 1 : 0;
+
+    traceUnitTMB(leftColumn, row, trace);
+    traceUnitTMB(column, row, trace);
+    traceUnitTMB(rightColumn, row, trace);
 }
