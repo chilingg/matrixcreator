@@ -28,6 +28,8 @@ public:
     enum ModelPattern{ EmptyPattern, LifeGameTSF, LifeGameCCL, LifeGameTRC };
 
     MatrixModel(unsigned widht = 0, ModelPattern pattern = EmptyPattern);
+    MatrixModel(const MatrixModel &) = delete;
+    MatrixModel& operator=(const MatrixModel &) = delete;
     ~MatrixModel();
 
     int getUnitValue(MatrixSize x, MatrixSize y) const;//获取单元值

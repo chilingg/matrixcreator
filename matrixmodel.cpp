@@ -15,6 +15,7 @@ MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
 
 MatrixModel::~MatrixModel()
 {
+    //貌似没有必要
     switchModel(EmptyPattern);
     currentModel.clear();
 }
