@@ -23,7 +23,7 @@ MatrixController::MatrixController(QWidget *parent):
     unitInfo("XY = %1,%2    value = %3"),
     mInfo(" Generation = %1    Scale = 1:%2    Value = %3/%4    Threads = %5  "),
     THREADS(model.getThreads()),
-    toolBar(new QToolBar("Tools")),
+    toolBar(new QToolBar("Tools", this)),
     circleTool(new QAction(QIcon(":/tool/circel"), tr("&Circle Tool"), this)),
     pointTool(new QAction(QIcon(":/tool/point"), tr("&Point Tool"), this)),
     translateTool(new QAction(QIcon(":/tool/translate"), tr("&Translate Tool"), this))
@@ -44,13 +44,24 @@ MatrixController::MatrixController(QWidget *parent):
     //状态栏设置
     updateMatrixInfo();
     mStatusBar->addPermanentWidget(mInfoLabel);
+    //设置工具栏背景色
+    QPalette statusPal(palette());
+    statusPal.setColor(QPalette::Background, MatrixColor::LUMINOSITY_2_68);
+    statusPal.setColor(QPalette::WindowText, MatrixColor::LUMINOSITY_4_204);
+    mStatusBar->setAutoFillBackground(true);
+    mStatusBar->setPalette(statusPal);
 
     //工具栏设置
     addToolBar(Qt::LeftToolBarArea, toolBar);
-    toolBar->setIconSize(QSize(28, 28));
+    toolBar->setIconSize(QSize(24, 24));
     toolBar->addAction(circleTool);
     toolBar->addAction(pointTool);
     toolBar->addAction(translateTool);
+    //设置工具栏背景色
+    QPalette ToolPal(palette());
+    ToolPal.setColor(QPalette::Background, MatrixColor::LUMINOSITY_3_136);
+    toolBar->setAutoFillBackground(true);
+    toolBar->setPalette(ToolPal);
 }
 
 void MatrixController::timerEvent(QTimerEvent *)

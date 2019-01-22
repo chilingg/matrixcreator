@@ -31,7 +31,7 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
 {
     //设置窗口背景色
     QPalette pal(palette());
-    pal.setColor(QPalette::Background, MatrixColor::LUMINOSITY_1_51);
+    pal.setColor(QPalette::Background, MatrixColor::LUMINOSITY_1_34);
     setAutoFillBackground(true);
     setPalette(pal);
 
@@ -331,7 +331,7 @@ void MatrixView::drawReferenceLine(QPainter &painter)
 
 void MatrixView::drawFPSText(QPainter &painter)
 {
-    QPoint point(-viewOffsetX + 10, -viewOffsetY + 15);
+    QPoint point(-viewOffsetX + 24, -viewOffsetY + 20);
 
     static QPixmap fpsText(":/texts/FPS");
     static QPixmap pointText(":/texts/point");
