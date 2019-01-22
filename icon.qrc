@@ -16,6 +16,11 @@
     <qresource prefix="/cursor">
         <file alias="circle">icons/cursor/circle.png</file>
         <file alias="point">icons/cursor/point.png</file>
-        <file alias="translate">icons/cursor/zoom.png</file>
+        <file alias="translate">icons/cursor/translate.png</file>
+    </qresource>
+    <qresource prefix="/tool">
+        <file alias="circel">icons/tool/circle.png</file>
+        <file alias="point">icons/tool/point.png</file>
+        <file alias="translate">icons/tool/translate.png</file>
     </qresource>
 </RCC>

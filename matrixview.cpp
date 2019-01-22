@@ -12,10 +12,10 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
     viewRow(0),
     zoomList{ 1,2,4,8,16,32,64 },
     lineColor{
-        MatrixColor::LUMINOSITY_1_17,
         MatrixColor::LUMINOSITY_1_34,
         MatrixColor::LUMINOSITY_1_51,
         MatrixColor::LUMINOSITY_2_68,
+        MatrixColor::LUMINOSITY_2_85,
         },
     unitSize(zoomList[4]),
     unitsDspl(true),
@@ -42,6 +42,10 @@ MatrixView::MatrixView(MatrixModel &m, QWidget *parent) :
 
     switchColorPattern(model.getCurrentPattern());
 }
+
+QColor MatrixView::died = MatrixColor::LUMINOSITY_1_17;
+QColor MatrixView::lifed = MatrixColor::LUMINOSITY_4_204;
+
 
 MPoint MatrixView::inView(QPoint clicktedPos) const
 {
@@ -151,7 +155,7 @@ void MatrixView::takePicture(QString path)
     if(selectedViewRect.isValid())
     {
         QImage picture(selectedViewRect.width(), selectedViewRect.height(), QImage::Format_RGB32);
-        picture.fill(MatrixColor::LUMINOSITY_1_17);
+        picture.fill(MatrixColor::LUMINOSITY_1_34);
 
         //绘制模型图像
         int modelLeft = selectedViewRect.left() / unitSize;
@@ -245,7 +249,7 @@ void MatrixView::updateViewSize()
 
     //构建显示模型单元的图像
     unitImage = QImage(viewColumn * unitSize, viewRow * unitSize, QImage::Format_RGB32);
-    unitImage.fill(MatrixColor::LUMINOSITY_1_17);
+    unitImage.fill(MatrixColor::LUMINOSITY_1_34);
 }
 
 void MatrixView::drawBaseUnits(int left, int top, int mWidth, int mHeight, QImage &picture)
@@ -391,14 +395,14 @@ void MatrixView::drawOverRangeLine(QPainter &painter)
     {
         QLinearGradient gradient(0, 0, 0, unitSize);
         gradient.setColorAt(0.0, MatrixColor::WARNING);
-        gradient.setColorAt(1.0, MatrixColor::LUMINOSITY_0_0);
+        gradient.setColorAt(1.0, died.rgb());
         painter.setBrush(QBrush(gradient));
         painter.drawRect(0, 0, viewColumn*unitSize, unitSize);
     }
     else if(overRange[2])
     {
         QLinearGradient gradient(0, viewRow*unitSize - unitSize, 0, viewRow*unitSize);
-        gradient.setColorAt(0.0, MatrixColor::LUMINOSITY_0_0);
+        gradient.setColorAt(0.0, died.rgb());
         gradient.setColorAt(1.0, MatrixColor::WARNING);
         painter.setBrush(QBrush(gradient));
         painter.drawRect(0, viewRow*unitSize - unitSize, viewColumn*unitSize, unitSize);
@@ -407,14 +411,14 @@ void MatrixView::drawOverRangeLine(QPainter &painter)
     {
         QLinearGradient gradient(0, 0, unitSize, 0);
         gradient.setColorAt(0.0, MatrixColor::WARNING);
-        gradient.setColorAt(1.0, MatrixColor::LUMINOSITY_0_0);
+        gradient.setColorAt(1.0, died.rgb());
         painter.setBrush(QBrush(gradient));
         painter.drawRect(0, 0, unitSize, viewRow*unitSize);
     }
     else if(overRange[4])
     {
         QLinearGradient gradient(viewColumn*unitSize - unitSize, 0, viewColumn*unitSize, 0);
-        gradient.setColorAt(0.0, MatrixColor::LUMINOSITY_0_0);
+        gradient.setColorAt(0.0, died.rgb());
         gradient.setColorAt(1.0, MatrixColor::WARNING);
         painter.setBrush(QBrush(gradient));
         painter.drawRect(viewColumn*unitSize - unitSize, 0, unitSize, viewRow*unitSize);
@@ -426,14 +430,14 @@ void MatrixView::drawOverRangeLine(QPainter &painter)
 QRgb MatrixView::tValueToColor(int value)
 {
     if(value == 0)
-        return MatrixColor::LUMINOSITY_0_0.rgb();
+        return died.rgb();
     else
-        return MatrixColor::LUMINOSITY_4_204.rgb();
+        return lifed.rgb();
 }
 
 QRgb MatrixView::cValueToColor(int value)
 {
-    QRgb color = 0;
+    QRgb color = died.rgb();
     switch (value)
     {
     case 0:
@@ -441,7 +445,7 @@ QRgb MatrixView::cValueToColor(int value)
     case 2:
         break;
     case 3:
-        color = MatrixColor::LUMINOSITY_4_204.rgb();
+        color = lifed.rgb();
         break;
     case 4:
     case 5:
@@ -453,7 +457,7 @@ QRgb MatrixView::cValueToColor(int value)
         break;
     case 12:
     case 13:
-        color = MatrixColor::LUMINOSITY_4_204.rgb();
+        color = lifed.rgb();
         break;
     case 14:
     case 15:

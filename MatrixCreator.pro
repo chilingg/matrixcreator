@@ -31,7 +31,6 @@ SOURCES += main.cpp \
 HEADERS  += \
     matrixcontroller.h \
     matrixmodel.h \
-    matrixmodel.h \
     matrixview.h \
     mpoint.h
 

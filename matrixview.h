@@ -86,6 +86,9 @@ private:
     QRect selectedViewRect;	//选框
     QImage unitImage;		//模型单元图像
 
+    static QColor died;
+    static QColor lifed;
+
     //fps计算
     double fpsCount;
     unsigned frameSum;

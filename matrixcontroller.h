@@ -11,6 +11,8 @@
 #include <QCursor>
 #include <QStatusBar>
 #include <QLabel>
+#include <QAction>
+#include <QToolBar>
 
 #ifndef M_NO_DEBUG
 #include <QDebug>
@@ -37,6 +39,7 @@ private:
     void clearSelectBox();
     void updateMatrixInfo();
     void selectPattern(MatrixModel::ModelPattern p);
+    void setCursorTool(CursorTool tool);
 
     MatrixModel model;
     MatrixView view;
@@ -45,22 +48,32 @@ private:
     QPoint moveViewPos;
     QRect selectPos;
     MPoint clickedPos;
+
+    //默认值与替换默认值
     int dfv1;
     int dfv2;
     int defaultValue;
 
+    //鼠标工具
     CursorTool cursorTool;
     CursorTool lastCursorTool;
     QCursor circleCursor;
     QCursor pointCursor;
     QCursor translateCursor;
 
+    //状态栏
     QStatusBar *mStatusBar;
     QLabel *mInfoLabel;
     long long unsigned generation;
     const QString unitInfo;
     const QString mInfo;
     const unsigned THREADS;
+
+    //工具栏
+    QToolBar *toolBar;
+    QAction *circleTool;
+    QAction *pointTool;
+    QAction *translateTool;
 };
 
 inline void MatrixController::clearSelectBox()
@@ -79,6 +92,5 @@ inline void MatrixController::updateMatrixInfo()
                         .arg(dfv2)
                         .arg(THREADS));
 }
-
 
 #endif // MATRIXCONTROLLER_H

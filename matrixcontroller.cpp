@@ -12,7 +12,7 @@ MatrixController::MatrixController(QWidget *parent):
     dfv1(0),
     dfv2(0),
     defaultValue(dfv1),
-    cursorTool(POINT),
+    cursorTool(CIRCLE),
     lastCursorTool(CIRCLE),
     circleCursor(QPixmap(":/cursor/circle"), 0, 0),
     pointCursor(QPixmap(":/cursor/point"), 0, 0),
@@ -22,7 +22,11 @@ MatrixController::MatrixController(QWidget *parent):
     generation(0),
     unitInfo("XY = %1,%2    value = %3"),
     mInfo(" Generation = %1    Scale = 1:%2    Value = %3/%4    Threads = %5  "),
-    THREADS(model.getThreads())
+    THREADS(model.getThreads()),
+    toolBar(new QToolBar("Tools")),
+    circleTool(new QAction(QIcon(":/tool/circel"), tr("&Circle Tool"), this)),
+    pointTool(new QAction(QIcon(":/tool/point"), tr("&Point Tool"), this)),
+    translateTool(new QAction(QIcon(":/tool/translate"), tr("&Translate Tool"), this))
 {
     setWindowTitle(tr("MatrixCreator"));
     resize(840, 720);//默认大小
@@ -35,11 +39,18 @@ MatrixController::MatrixController(QWidget *parent):
     startTimer(1000/24);
 
     //默认点选工具
-    setCursor(pointCursor);
+    setCursorTool(POINT);
 
     //状态栏设置
     updateMatrixInfo();
     mStatusBar->addPermanentWidget(mInfoLabel);
+
+    //工具栏设置
+    addToolBar(Qt::LeftToolBarArea, toolBar);
+    toolBar->setIconSize(QSize(28, 28));
+    toolBar->addAction(circleTool);
+    toolBar->addAction(pointTool);
+    toolBar->addAction(translateTool);
 }
 
 void MatrixController::timerEvent(QTimerEvent *)
@@ -294,9 +305,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     //Z 平移工具
     if(event->key() == Qt::Key_Z)
     {
-        lastCursorTool = cursorTool;
-        cursorTool = TRANSLATE;
-        setCursor(translateCursor);
+        setCursorTool(TRANSLATE);
         return;
     }
     //空格 开始暂停
@@ -384,17 +393,13 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     //A 点选工具
     if(event->key() == Qt::Key_A)
     {
-        lastCursorTool = cursorTool;
-        cursorTool = POINT;
-        setCursor(pointCursor);
+        setCursorTool(POINT);
         return;
     }
     //V 框选工具
     if(event->key() == Qt::Key_V)
     {
-        lastCursorTool = cursorTool;
-        cursorTool = CIRCLE;
-        setCursor(circleCursor);
+        setCursorTool(CIRCLE);
         return;
     }
     //X 交换两个默认值
@@ -515,6 +520,32 @@ void MatrixController::selectPattern(MatrixModel::ModelPattern p)
         dfv1 = 0;
         dfv2 = 0;
         defaultValue = dfv1;
+        break;
+    }
+}
+
+
+void MatrixController::setCursorTool(MatrixController::CursorTool tool)
+{
+    lastCursorTool = cursorTool;
+    cursorTool = tool;
+
+    switch (cursorTool)
+    {
+    case POINT:
+        setCursor(pointCursor);
+        break;
+    case CIRCLE:
+        setCursor(circleCursor);
+        break;
+    case TRANSLATE:
+        setCursor(translateCursor);
+        break;
+    default:
+#ifndef M_NO_DEBUG
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "error: undefined cursor tool" << cursorTool;
+#endif
         break;
     }
 }
