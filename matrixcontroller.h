@@ -40,6 +40,8 @@ private:
     void updateMatrixInfo();
     void selectPattern(MatrixModel::ModelPattern p);
     void setCursorTool(CursorTool tool);
+    QPoint getPosInCentralWidget(QMouseEvent *event);
+    QPoint getPosInCentralWidget(QWheelEvent *event);
 
     MatrixModel model;
     MatrixView view;
@@ -71,8 +73,8 @@ private:
 
     //工具栏
     QToolBar *toolBar;
-    QAction *circleTool;
     QAction *pointTool;
+    QAction *circleTool;
     QAction *translateTool;
 };
 
@@ -91,6 +93,20 @@ inline void MatrixController::updateMatrixInfo()
                         .arg(dfv1)
                         .arg(dfv2)
                         .arg(THREADS));
+}
+
+inline QPoint MatrixController::getPosInCentralWidget(QMouseEvent *event)
+{
+    QPoint pos = event->pos();
+    pos.setX(pos.x() - toolBar->width());
+    return pos;
+}
+
+inline QPoint MatrixController::getPosInCentralWidget(QWheelEvent *event)
+{
+    QPoint pos = event->pos();
+    pos.setX(pos.x() - toolBar->width());
+    return pos;
 }
 
 #endif // MATRIXCONTROLLER_H

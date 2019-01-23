@@ -24,8 +24,8 @@ MatrixController::MatrixController(QWidget *parent):
     mInfo(" Generation = %1    Scale = 1:%2    Value = %3/%4    Threads = %5  "),
     THREADS(model.getThreads()),
     toolBar(new QToolBar("Tools", this)),
-    circleTool(new QAction(QIcon(":/tool/circel"), tr("&Circle Tool"), this)),
     pointTool(new QAction(QIcon(":/tool/point"), tr("&Point Tool"), this)),
+    circleTool(new QAction(QIcon(":/tool/circel"), tr("&Circle Tool"), this)),
     translateTool(new QAction(QIcon(":/tool/translate"), tr("&Translate Tool"), this))
 {
     setWindowTitle(tr("MatrixCreator"));
@@ -51,12 +51,21 @@ MatrixController::MatrixController(QWidget *parent):
     mStatusBar->setAutoFillBackground(true);
     mStatusBar->setPalette(statusPal);
 
+    //动作连接
+    connect(circleTool, &QAction::triggered, [this]{ setCursorTool(CIRCLE);});
+    connect(pointTool, &QAction::triggered, [this]{ setCursorTool(POINT);});
+    connect(translateTool, &QAction::triggered, [this]{ setCursorTool(TRANSLATE);});
+
     //工具栏设置
     addToolBar(Qt::LeftToolBarArea, toolBar);
     toolBar->setIconSize(QSize(24, 24));
-    toolBar->addAction(circleTool);
     toolBar->addAction(pointTool);
+    toolBar->addAction(circleTool);
     toolBar->addAction(translateTool);
+    circleTool->setCheckable(true);
+    pointTool->setCheckable(true);
+    translateTool->setCheckable(true);
+    pointTool->setChecked(true);
     //设置工具栏背景色
     QPalette ToolPal(palette());
     ToolPal.setColor(QPalette::Background, MatrixColor::LUMINOSITY_3_136);
@@ -77,7 +86,7 @@ void MatrixController::timerEvent(QTimerEvent *)
 void MatrixController::mousePressEvent(QMouseEvent *event)
 {
     clearSelectBox();
-    MPoint viewPos = view.inView(event->pos());
+    MPoint viewPos = view.inView(getPosInCentralWidget(event));
 
     //查看点击是否发生在视图中
     if(viewPos.valid)
@@ -89,7 +98,7 @@ void MatrixController::mousePressEvent(QMouseEvent *event)
 
         if (event->button() == Qt::MidButton)
         {
-            moveViewPos = event->pos();//点击中键记录当前坐标
+            moveViewPos = getPosInCentralWidget(event);//点击中键记录当前坐标
             setCursor(translateCursor);
             return;
         }
@@ -98,7 +107,7 @@ void MatrixController::mousePressEvent(QMouseEvent *event)
         {
             if(cursorTool == TRANSLATE)//平移
             {
-                moveViewPos = event->pos();
+                moveViewPos = getPosInCentralWidget(event);
                 return;
             }
             else if(cursorTool == CIRCLE && !modelResume)//框选
@@ -121,7 +130,7 @@ void MatrixController::mousePressEvent(QMouseEvent *event)
 
 void MatrixController::mouseMoveEvent(QMouseEvent *event)
 {
-    MPoint viewPos = view.inView(event->pos());
+    MPoint viewPos = view.inView(getPosInCentralWidget(event));
 
     if(viewPos.valid)
     {
@@ -482,7 +491,7 @@ void MatrixController::wheelEvent(QWheelEvent *event)
 {
     clearSelectBox();
 
-    MPoint viewPos = view.inView(event->pos());
+    MPoint viewPos = view.inView(getPosInCentralWidget(event));
     if(viewPos.valid)
     {
         if(event->delta() > 0)
@@ -491,12 +500,12 @@ void MatrixController::wheelEvent(QWheelEvent *event)
             view.zoomView(viewPos, MatrixView::ZoomOut);//缩小
 
         //缩放后鼠标位置处于view中
-        viewPos = view.inView(event->pos());
+        viewPos = view.inView(getPosInCentralWidget(event));
         if(viewPos.valid)
         {
             //获取鼠标所处单元的中心点坐标和view与全局坐标的偏差值，并把光标移到该坐标
             QPoint unitCtrPos = viewPos.viewRect.center();
-            QPoint offset = event->globalPos() - event->pos() + view.getViewOffsetPoint();
+            QPoint offset = event->globalPos() - getPosInCentralWidget(event) + view.getViewOffsetPoint();
             cursor().setPos(unitCtrPos + offset);
         }
         view.update();
@@ -541,16 +550,38 @@ void MatrixController::setCursorTool(MatrixController::CursorTool tool)
     lastCursorTool = cursorTool;
     cursorTool = tool;
 
+    switch (lastCursorTool)
+    {
+    case POINT:
+        pointTool->setChecked(false);
+        break;
+    case CIRCLE:
+        circleTool->setChecked(false);
+        break;
+    case TRANSLATE:
+        translateTool->setChecked(false);
+        break;
+    default:
+#ifndef M_NO_DEBUG
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "error: undefined cursor tool" << cursorTool;
+#endif
+        break;
+    }
+
     switch (cursorTool)
     {
     case POINT:
         setCursor(pointCursor);
+        pointTool->setChecked(true);
         break;
     case CIRCLE:
         setCursor(circleCursor);
+        circleTool->setChecked(true);
         break;
     case TRANSLATE:
         setCursor(translateCursor);
+        translateTool->setChecked(true);
         break;
     default:
 #ifndef M_NO_DEBUG
