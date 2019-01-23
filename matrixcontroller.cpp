@@ -12,7 +12,7 @@ MatrixController::MatrixController(QWidget *parent):
     dfv1(0),
     dfv2(0),
     defaultValue(dfv1),
-    cursorTool(CIRCLE),
+    cursorTool(POINT),
     lastCursorTool(CIRCLE),
     circleCursor(QPixmap(":/cursor/circle"), 0, 0),
     pointCursor(QPixmap(":/cursor/point"), 0, 0),
@@ -39,7 +39,7 @@ MatrixController::MatrixController(QWidget *parent):
     startTimer(1000/24);
 
     //默认点选工具
-    setCursorTool(POINT);
+    setCursorTool(cursorTool);
 
     //状态栏设置
     updateMatrixInfo();
