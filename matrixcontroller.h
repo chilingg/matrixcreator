@@ -46,6 +46,7 @@ private:
     MatrixModel model;
     MatrixView view;
     bool modelResume;
+    unsigned pressKeys;//记录当前按键数量
 
     QPoint moveViewPos;
     QRect selectPos;

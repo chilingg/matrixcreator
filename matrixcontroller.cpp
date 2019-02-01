@@ -6,6 +6,7 @@ MatrixController::MatrixController(QWidget *parent):
     model(4000, MatrixModel::LifeGameTRC),
     view(model, this),
     modelResume(false),
+    pressKeys(0),
     moveViewPos(),
     selectPos(),
     clickedPos{false,0,0,QPoint(),QRect()},
@@ -285,29 +286,31 @@ void MatrixController::mouseReleaseEvent(QMouseEvent *event)
 
 void MatrixController::keyPressEvent(QKeyEvent *event)
 {
+    ++pressKeys;//当前按键数加1
+
     //ctrl+' 网格开关
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Apostrophe)
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Apostrophe && pressKeys == 2)
     {
         view.gridOnOff();
         view.update();
         return;
     }
     //ctrl+; 参考线开关
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Semicolon)
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Semicolon && pressKeys == 2)
     {
         view.referenceLineOnOff();
         view.update();
         return;
     }
     //Tab 帧率显示开关
-    if(event->key() == Qt::Key_Tab)
+    if(event->key() == Qt::Key_Tab && pressKeys == 1)
     {
         view.fpsOnOff();
         view.update();
         return;
     }
     //+ 放大
-    if(event->key() == Qt::Key_Plus)
+    if(event->key() == Qt::Key_Plus && pressKeys == 1)
     {
         clearSelectBox();
         view.zoomView(view.inView(QPoint(width()/2, height()/2)), MatrixView::ZoomIn);
@@ -315,7 +318,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         return;
     }
     //- 缩小
-    if(event->key() == Qt::Key_Minus)
+    if(event->key() == Qt::Key_Minus && pressKeys == 1)
     {
         clearSelectBox();
         view.zoomView(view.inView(QPoint(width()/2, height()/2)), MatrixView::ZoomOut);
@@ -323,13 +326,13 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         return;
     }
     //Z 平移工具
-    if(event->key() == Qt::Key_Z)
+    if(event->key() == Qt::Key_Z && pressKeys == 1)
     {
         setCursorTool(TRANSLATE);
         return;
     }
     //空格 开始暂停
-    if(event->key() == Qt::Key_Space)
+    if(event->key() == Qt::Key_Space && pressKeys == 1)
     {
         clearSelectBox();
         modelResume = !modelResume;
@@ -345,7 +348,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     {
         //shift+F5 填充默认值
         QRect selectArea = view.getSelectUnitRect();
-        if(event->modifiers() == Qt::ShiftModifier && event->key() == Qt::Key_F5)
+        if(event->modifiers() == Qt::ShiftModifier && event->key() == Qt::Key_F5 && pressKeys == 2)
         {
             for(int i = selectArea.left(); i <= selectArea.right(); ++i)
             {
@@ -359,7 +362,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
             return;
         }
         //delete 删除选中
-        else if(event->key() == Qt::Key_Delete)
+        else if(event->key() == Qt::Key_Delete && pressKeys == 1)
         {
             model.clearUnit(selectArea.left(), selectArea.top(), selectArea.width(), selectArea.height());
             view.update();
@@ -368,7 +371,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     }
 
     //F12 拍照
-    if(event->key() == Qt::Key_F12)
+    if(event->key() == Qt::Key_F12 && pressKeys == 1)
     {
         QString s = QFileDialog::getSaveFileName(this,
                                                  "Image Save As",
@@ -389,7 +392,7 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
     }
 
     //ctrl 暂切选择工具
-    if(event->key() == Qt::Key_Control)
+    if(event->key() == Qt::Key_Control && pressKeys == 1)
     {
         CursorTool temp = lastCursorTool;
         lastCursorTool = cursorTool;
@@ -411,19 +414,19 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         }
     }
     //A 点选工具
-    if(event->key() == Qt::Key_A)
+    if(event->key() == Qt::Key_A && pressKeys == 1)
     {
         setCursorTool(POINT);
         return;
     }
     //V 框选工具
-    if(event->key() == Qt::Key_V)
+    if(event->key() == Qt::Key_V && pressKeys == 1)
     {
         setCursorTool(CIRCLE);
         return;
     }
     //X 交换两个默认值
-    if(event->key() == Qt::Key_X)
+    if(event->key() == Qt::Key_X && pressKeys == 1)
     {
         defaultValue = dfv2;
         dfv2 = dfv1;
@@ -433,21 +436,21 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
         return;
     }
     //ctrl+delete 清除全部
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Delete)
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Delete && pressKeys == 2)
     {
         model.clearAllUnit();
         view.update();
         return;
     }
     //模型居中
-    if(event->key() == Qt::Key_F4)
+    if(event->key() == Qt::Key_F4 && pressKeys == 1)
     {
         view.moveToCoordinate();
         view.update();
         return;
     }
     //→ 单步前进
-    if(event->key() == Qt::Key_Right)
+    if(event->key() == Qt::Key_Right && pressKeys == 1)
     {
         (model.*(model.updateModel))();
         updateMatrixInfo();
@@ -458,6 +461,8 @@ void MatrixController::keyPressEvent(QKeyEvent *event)
 
 void MatrixController::keyReleaseEvent(QKeyEvent *event)
 {
+    --pressKeys;//松开一个按键
+
     //模型运行时不处理以下事件
     if(modelResume)
         return;
