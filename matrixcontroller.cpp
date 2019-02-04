@@ -13,8 +13,8 @@ MatrixController::MatrixController(QWidget *parent):
     dfv1(0),
     dfv2(0),
     defaultValue(dfv1),
-    cursorTool(POINT),
-    lastCursorTool(CIRCLE),
+    cursorTool(CIRCLE),
+    lastCursorTool(POINT),
     circleCursor(QPixmap(":/cursor/circle"), 0, 0),
     pointCursor(QPixmap(":/cursor/point"), 0, 0),
     translateCursor(QPixmap(":/cursor/translate"), 8, 8),
@@ -40,7 +40,7 @@ MatrixController::MatrixController(QWidget *parent):
     startTimer(1000/24);
 
     //默认点选工具
-    setCursorTool(cursorTool);
+    setCursorTool(POINT);
 
     //状态栏设置
     updateMatrixInfo();
@@ -191,15 +191,16 @@ void MatrixController::mouseMoveEvent(QMouseEvent *event)
             }
             else if(cursorTool == CIRCLE && modelResume == false)
             {
-                QRect beforeRect = selectPos;//起始点
-
                 //视图外移动进来
-                if(beforeRect.isEmpty())
+                if(selectPos.isEmpty())
                 {
+                    selectPos = viewPos.viewRect;
                     view.selectUnits(viewPos.viewRect);
                     view.update();
                     return;
                 }
+
+                QRect beforeRect = selectPos;//起始点
 
                 QRect afterPos = viewPos.viewRect;//终点
                 if(beforeRect.x() < afterPos.x())//向右框选
