@@ -3,7 +3,7 @@
 
 MatrixController::MatrixController(QWidget *parent):
     QMainWindow(parent),
-    model(4000, MatrixModel::LifeGameTRC),
+    model(4000, MatrixModel::LifeGameCCL),
     view(model, this),
     modelResume(false),
     pressKeys(0),
@@ -79,6 +79,7 @@ void MatrixController::timerEvent(QTimerEvent *)
     if(modelResume)
     {
         (model.*(model.updateModel))();
+        ++generation;
         updateMatrixInfo();
         view.update();
     }
@@ -504,6 +505,8 @@ void MatrixController::wheelEvent(QWheelEvent *event)
             view.zoomView(viewPos, MatrixView::ZoomIn);//放大
         else
             view.zoomView(viewPos, MatrixView::ZoomOut);//缩小
+
+        updateMatrixInfo();
 
         //缩放后鼠标位置处于view中
         viewPos = view.inView(getPosInCentralWidget(event));

@@ -14,13 +14,8 @@
 #include <QDebug>
 #endif
 
-using std::set;
-using std::map;
-using std::pair;
-using std::make_pair;
-using std::vector;
-using MatrixSize = vector<int>::size_type;
-using TraceLine = pair<MatrixSize, set<MatrixSize>>;
+using MatrixSize = std::vector<int>::size_type;
+using TraceLine = std::pair<MatrixSize, std::set<MatrixSize>>;
 
 class MatrixModel
 {
@@ -57,7 +52,7 @@ private:
     void transferModelLine(MatrixSize line);//使用Transfer一次更新一行
     void startTransfer();//送进线程中的控制函数
     int getAroundValue(MatrixSize x, MatrixSize y);
-    vector<vector<int> >tTempModel;
+    std::vector<std::vector<int> >tTempModel;
 
     //LifeGame模型演变Calculus
     //把当前模型对下次更新的影响记录下来，再依据记录修改当前模型
@@ -65,30 +60,30 @@ private:
     void changLineAroundValue(MatrixSize line);//记录当前行对四周的影响
     void startCalculus();//控制记录线程
     QWaitCondition synchroThread;
-    vector<vector<int> >cTempModel;
+    std::vector<std::vector<int> >cTempModel;
 
     //LifeGame模型追踪unit
     //追踪有值的单元，忽略其他
     void LFTraceModelThread();//启用Trace线程
-    void changTraceAroundValue(map<MatrixSize, set<MatrixSize>>::const_iterator lineIt);//记录追踪单元对四周的影响
+    void changTraceAroundValue(std::map<MatrixSize, std::set<MatrixSize>>::const_iterator lineIt);//记录追踪单元对四周的影响
     void recordTraceAroundValue(size_t index);//把tempTrace中记录的unit及其四周记录进traceUnit
     void startTrace();//送进线程中的控制函数
-    void traceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);//开启追踪时才会记录坐标
-    void unTraceUnit(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);
-    void traceUnitTMB(MatrixSize column, MatrixSize rowM, map<MatrixSize, set<MatrixSize> > *trace);
-    void traceUnitAround(MatrixSize column, MatrixSize row, map<MatrixSize, set<MatrixSize> > *trace);
+    void traceUnit(MatrixSize column, MatrixSize row, std::map<MatrixSize, std::set<MatrixSize> > *trace);//开启追踪时才会记录坐标
+    void unTraceUnit(MatrixSize column, MatrixSize row, std::map<MatrixSize, std::set<MatrixSize> > *trace);
+    void traceUnitTMB(MatrixSize column, MatrixSize rowM, std::map<MatrixSize, std::set<MatrixSize> > *trace);
+    void traceUnitAround(MatrixSize column, MatrixSize row, std::map<MatrixSize, std::set<MatrixSize> > *trace);
     TraceLine popTracedLine(size_t index);
-    map<MatrixSize, set<MatrixSize>>::const_iterator getTracedLine(size_t index);
-    map<MatrixSize, set<MatrixSize>> tracedUnit[4];
-    map<MatrixSize, set<MatrixSize>> tempTraceAround[4];
-    vector<vector<int> >trTempModel;
+    std::map<MatrixSize, std::set<MatrixSize>>::const_iterator getTracedLine(size_t index);
+    std::map<MatrixSize, std::set<MatrixSize>> tracedUnit[4];
+    std::map<MatrixSize, std::set<MatrixSize>> tempTraceAround[4];
+    std::vector<std::vector<int> >trTempModel;
     QFuture<void> recordFuture;
     bool traceOnOff;
     bool record;
 
     unsigned THREADS;
-    vector<QFuture<void> > future;
-    vector<vector<int> >currentModel;
+    std::vector<QFuture<void> > future;
+    std::vector<std::vector<int> >currentModel;
     ModelPattern modelPattern;
     unsigned modelSize;
 

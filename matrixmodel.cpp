@@ -1,5 +1,11 @@
 #include "matrixmodel.h"
 
+using std::set;
+using std::map;
+using std::pair;
+using std::make_pair;
+using std::vector;
+
 MatrixModel::MatrixModel(unsigned size, ModelPattern pattern):
     traceOnOff(false),
     record(false),

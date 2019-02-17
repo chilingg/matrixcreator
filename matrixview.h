@@ -11,8 +11,6 @@
 #include <QDebug>
 #endif
 
-using std::array;
-
 class MatrixView : public QWidget
 {
     Q_OBJECT
@@ -72,8 +70,8 @@ private:
     int viewColumn;
     int viewRow;
     //缩放级别组
-    array<const int, 7> zoomList;
-    array<const QColor, 4> lineColor;
+    std::array<const int, 7> zoomList;
+    std::array<const QColor, 4> lineColor;
     int unitSize;	//基础单位大小（px）
 
     //一些开关
@@ -81,7 +79,7 @@ private:
     bool gridDspl; 	//绘制网格参考线
     bool rflDspl; 	//绘制网格参考线
     bool fpsDspl;	//fps显示
-    array<bool, 5> overRange;//移动视图越界提示
+    std::array<bool, 5> overRange;//移动视图越界提示
 
     QRect selectedViewRect;	//选框
     QImage unitImage;		//模型单元图像

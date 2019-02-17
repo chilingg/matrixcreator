@@ -89,7 +89,7 @@ inline void MatrixController::clearSelectBox()
 
 inline void MatrixController::updateMatrixInfo()
 {
-    mInfoLabel->setText(mInfo.arg(++generation)
+    mInfoLabel->setText(mInfo.arg(generation)
                         .arg(view.getUnitSize())
                         .arg(dfv1)
                         .arg(dfv2)
