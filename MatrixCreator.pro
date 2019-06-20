@@ -23,16 +23,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 
-SOURCES += main.cpp\
+SOURCES += main.cpp \
+    matrixcontroller.cpp \
     matrixmodel.cpp \
-    matrixview.cpp \
-    matrixcontroller.cpp
+    matrixview.cpp
 
 HEADERS  += \
+    matrixcontroller.h \
     matrixmodel.h \
     matrixview.h \
-    constants.h \
-    matrixcontroller.h
+    mpoint.h
 
 RESOURCES += \
-    icons/icons.qrc
+    icon.qrc

@@ -1,109 +1,107 @@
 #ifndef MATRIXVIEW_H
 #define MATRIXVIEW_H
 
-#include <QWidget>
-#include <QtConcurrent>
 #include "matrixmodel.h"
+#include "mpoint.h"
+#include <QWidget>
+#include <QPainter>
+#include <array>
+
+#ifndef M_NO_DEBUG
+#include <QDebug>
+#endif
 
 class MatrixView : public QWidget
 {
     Q_OBJECT
 
 public:
-    MatrixView(MatrixModel *model, QWidget *parent = nullptr);
-    ~MatrixView();
-
-    bool isInView(int clickedX, int clickedY);//返回view坐标中对应的model坐标
-    bool isInView(QPoint pos);
-
-    QPoint getModelPoint(int clickedX, int clickedY);//点击坐标转换模型坐标
-    QPoint getModelPoint(QPoint clickedPos);
-    QPoint getUnitCentralPoint(int modelX, int modelY) const;//模型坐标转换为view中单元的中心点窗口坐标
-    QPoint getUnitCentralPoint(QPoint modelPoint) const;
-    QPoint getUnitPoint(QPoint modelPoint) const;//暂弃 模型坐标转换为view中单元的左上角坐标
-    QRect getUnitRect(QPoint modelPoint) const;//获取模型在view中的坐标集
-
-    QRect getSelectedModelRect() const;//获取选中的模型坐标集
-    QRect getSelectedUnitRect() const;//获取选中的view单元坐标集
-
+    enum Zoom { ZoomIn, ZoomOut };
+    explicit MatrixView(MatrixModel &m, QWidget *parent = nullptr);
+    //~MatrixView();
+    void moveToCoordinate(int column, int row);//移动指定坐标至左上角
+    void moveToCoordinate();//移动指定坐标模型中间
+    void selectUnits(QRect selectBox);//显示选框
+    void translationView(MatrixSize horizontal, MatrixSize vertical);//移动视图至指定坐标
+    void zoomView(MPoint cdt, Zoom zoom);//缩放视图
+    void referenceLineOnOff();//参考线开关
+    void gridOnOff();//网格开关
+    void fpsOnOff();//帧率显示开关
+    void overRangeLineOff();//取消越界线显示
+    void noRedrawUnits();//不重绘单元视图
+    void takePicture(QString path);//获取选区或屏幕照片
     QPoint getViewOffsetPoint() const;
-    int getBaseUnitSize() const;
-
-    void selectedUnits(QRect select);
-    void moveView(int horizontal, int vertical);
-    void zoomView(int clickedX, int clickedY, bool zoomView);//true缩小，false放大
-    void referenceLineOnOff();
-    void centerView();
-    void notRedraw();//因历史遗留原因而增加的函数，若重写则在更改视图时直接把redraw改为true
-
-    void FPSCount();
-    void FPSDisplayOnOff();
-
-    void takePicture();//获取选区或屏幕照片
-    void startAnimation(){animationOnOff = true;}
-    bool currentStatus(){ return animationOnOff; }
+    int getUnitSize() const;
+    QRect getSelectViewRect() const;
+    QRect getSelectUnitRect() const;
+    MPoint inView(QPoint clicktedPos) const;//查看点击坐标是否发生在视图中
+    void switchColorPattern(MatrixModel::ModelPattern pattern);
 
 protected:
+    void resizeEvent(QResizeEvent *);
     void paintEvent(QPaintEvent *);
-    void updateViewData();
-    void drawBaseUnit(int x, int y, QRgb color);//按baseUnitSize绘制基础单元
-    void drawBaseUnit(int x, int y, QRgb color, QImage &image);
-    void drawReferenceLine(QPainter &painter);//绘制参考线
-    void drawSelectBox(QPainter &painter);
-    void drawFPSText(QPainter &painter);
-    bool drawTakePicture(QPainter &painter);//绘制拍照动画
 
 private:
-    MatrixModel *model;
-    int baseUnitSize; //基础单位的大小
+    void updateViewSize();//更新视图数据
+    void moveViewCheckup();//检查视图显示的单元是否正常
+    void moveViewCheckupDisplay();//若视图越界则修正并显示
+    void FPSCount();//FPS计算
+    void drawBaseUnits();//绘制所有基础单元格
+    void drawBaseUnits(int left, int top, int mWidth, int mHeight, QImage &picture);
+    void drawReferenceLine(QPainter &painter);//绘制参考线
+    void drawSelectBox(QPainter &painter);//绘制选框
+    void drawFPSText(QPainter &painter);//绘制FPS数据
+    void drawOverRangeLine(QPainter &painter);//绘制越界提示线
+    void viewOverRange(bool top, bool bottom, bool left, bool right);
 
-    //基本状态
-    const int died;
-    const int lived;
-    //基本状态对应的颜色
-    const QRgb dieColor;
-    const QRgb liveColer;
+    QRgb (*valueToColor)(int);
+    static QRgb tValueToColor(int value);
+    static QRgb cValueToColor(int value);
 
-
+    const MatrixModel &model;
+    const int MODELSIZE;
     //绘制的矩阵与客户区坐标偏移量
     int viewOffsetX;
     int viewOffsetY;
-
     //视图与模型坐标偏移量
     int modelOffsetX;
     int modelOffsetY;
-
+    //单元在视图中的行列
     int viewColumn;
     int viewRow;
+    //缩放级别组
+    std::array<const int, 7> zoomList;
+    std::array<const QColor, 4> lineColor;
+    int unitSize;	//基础单位大小（px）
 
-    const int zoomList[7];
-    const int ZOOMLEVEL = 7;
+    //一些开关
+    bool unitsDspl;	//绘制模型单元
+    bool gridDspl; 	//绘制网格参考线
+    bool rflDspl; 	//绘制网格参考线
+    bool fpsDspl;	//fps显示
+    std::array<bool, 5> overRange;//移动视图越界提示
 
-    QRect selectedUnitRect;
-    bool referenceLine;
-    bool centerOnOff;
+    QRect selectedViewRect;	//选框
+    QImage unitImage;		//模型单元图像
 
-    QImage image;
-    bool redraw;
-    unsigned char *ppix;
-    int imageWidth;
+    static QColor died;
+    static QColor lifed;
 
     //fps计算
-    double fps;
-    int FrameSum;
-    bool fpsOnOff;
-    //fps计算2
-    QTime time;
+    double fpsCount;
+    unsigned frameSum;
+    QTime fpsTime;
 
-    //动画
-    bool animationOnOff = false;
+signals:
+
+public slots:
 };
 
-namespace VIEW
+namespace MatrixColor
 {
-    //定义了一组五分三等的明度
-    const QColor LUMINOSITY_0_0(0, 0, 0);//Black
+    const QColor LUMINOSITY_0_0(0, 0, 0);	//Black
 
+    //定义了一组五等三分的明度
     const QColor LUMINOSITY_1_17(17, 17, 17);
     const QColor LUMINOSITY_1_34(34, 34, 34);
     const QColor LUMINOSITY_1_51(51, 51, 51);
@@ -122,10 +120,152 @@ namespace VIEW
 
     const QColor LUMINOSITY_5_221(221, 221, 221);
     const QColor LUMINOSITY_5_238(238, 238, 238);
-    const QColor LUMINOSITY_5_255(255, 255, 255);//White
+    const QColor LUMINOSITY_5_255(255, 255, 255);	//White
 
-    const QColor WARNING(255, 0, 0);//Red
-    const QColor SELECT(0, 255, 255);//Cyan
+    const QColor WARNING(255, 0, 0);	//Red
+    const QColor SELECT(0, 255, 255);	//Cyan
+}
+
+inline void MatrixView::moveToCoordinate(int column, int row)
+{
+    modelOffsetX = column;
+    modelOffsetY = row;
+
+    moveViewCheckup();
+}
+
+inline void MatrixView::moveToCoordinate()
+{
+    moveToCoordinate(MODELSIZE/2, MODELSIZE/2);
+}
+
+inline void MatrixView::selectUnits(QRect selectBox)
+{
+    selectedViewRect = selectBox;
+}
+
+inline void MatrixView::noRedrawUnits()
+{
+    unitsDspl = false;
+}
+
+inline QPoint MatrixView::getViewOffsetPoint() const
+{
+    return QPoint(viewOffsetX, viewOffsetY);
+}
+
+inline int MatrixView::getUnitSize() const
+{
+    return unitSize;
+}
+
+inline QRect MatrixView::getSelectViewRect() const
+{
+    return selectedViewRect;
+}
+
+inline QRect MatrixView::getSelectUnitRect() const
+{
+    return QRect(selectedViewRect.topLeft()/unitSize + QPoint(modelOffsetX,modelOffsetY),
+                 selectedViewRect.size()/unitSize);
+}
+
+inline void MatrixView::drawSelectBox(QPainter &painter)
+{
+    painter.setPen(MatrixColor::SELECT);
+    painter.drawRect(selectedViewRect);
+}
+
+inline void MatrixView::viewOverRange(bool top, bool bottom, bool left, bool right)
+{
+    overRange[0] = true;//是否越界
+    overRange[1] = top;
+    overRange[2] = bottom;
+    overRange[3] = left;
+    overRange[4] = right;
+}
+
+inline void MatrixView::FPSCount()
+{
+    static int interval = fpsTime.elapsed();
+
+    //每N帧计算一次帧率
+    if(frameSum == 8)
+    {
+        //qDebug() << "fps: " << (time.elapsed() - interval);
+        fpsCount = 1000.0 / (fpsTime.elapsed() - interval) * 8.0;
+        interval = fpsTime.elapsed();
+        frameSum = 0;
+    }
+}
+
+inline void MatrixView::moveViewCheckup()
+{
+    //检查模型单元显示
+    if(modelOffsetX + viewColumn > MODELSIZE)
+    {
+        modelOffsetX = MODELSIZE - viewColumn;//检查视图列是否越界，若是则让视图刚好显示模型最后一列
+    }
+    else if(modelOffsetX < 0)
+    {
+        modelOffsetX = 0;
+    }
+
+    if(modelOffsetY + viewRow > MODELSIZE)
+    {
+        modelOffsetY = MODELSIZE - viewRow;//检查视图行是否越界，若是则让视图刚好显示模型最后一行
+    }
+    else if(modelOffsetY < 0)
+    {
+        modelOffsetY = 0;
+    }
+}
+
+inline void MatrixView::translationView(MatrixSize horizontal, MatrixSize vertical)
+{
+    if(horizontal)
+    {
+        modelOffsetX += horizontal;
+    }
+    if(vertical)
+    {
+        modelOffsetY += vertical;
+    }
+
+    moveViewCheckupDisplay();
+}
+
+inline void MatrixView::referenceLineOnOff()
+{
+    rflDspl = !rflDspl;
+}
+
+inline void MatrixView::gridOnOff()
+{
+    gridDspl = !gridDspl;
+
+    //显示网格需要重绘单元图像
+    if(gridDspl)
+    {
+        unitImage = QImage(viewColumn * unitSize, viewRow * unitSize, QImage::Format_RGB32);
+        unitImage.fill(MatrixColor::LUMINOSITY_1_17);
+    }
+}
+
+inline void MatrixView::fpsOnOff()
+{
+    fpsDspl = !fpsDspl;
+    frameSum = 0;
+}
+
+inline void MatrixView::overRangeLineOff()
+{
+    overRange[0] = false;
+}
+
+inline void MatrixView::drawBaseUnits()
+{
+    drawBaseUnits(0, 0, viewColumn, viewRow, unitImage);
 }
 
 #endif // MATRIXVIEW_H

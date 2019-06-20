@@ -1,259 +1,254 @@
-#include <QDebug>
 #include "matrixcontroller.h"
+#include <QFileDialog>
 
-MatriController::MatriController(QWidget *parent)
-    : QMainWindow(parent),
-      model(new MatrixModel()),
-      view(new MatrixView(model, this))
+MatrixController::MatrixController(QWidget *parent):
+    QMainWindow(parent),
+    model(4000, MatrixModel::LifeGameCCL),
+    view(model, this),
+    modelResume(false),
+    pressKeys(0),
+    moveViewPos(),
+    selectPos(),
+    clickedPos{false,0,0,QPoint(),QRect()},
+    dfv1(0),
+    dfv2(0),
+    defaultValue(dfv1),
+    cursorTool(CIRCLE),
+    lastCursorTool(POINT),
+    circleCursor(QPixmap(":/cursor/circle"), 0, 0),
+    pointCursor(QPixmap(":/cursor/point"), 0, 0),
+    translateCursor(QPixmap(":/cursor/translate"), 8, 8),
+    mStatusBar(statusBar()),
+    mInfoLabel(new QLabel()),
+    generation(0),
+    unitInfo("XY = %1,%2    value = %3"),
+    mInfo(" Generation = %1    Scale = 1:%2    Value = %3/%4    Threads = %5  "),
+    THREADS(model.getThreads()),
+    toolBar(new QToolBar("Tools", this)),
+    pointTool(new QAction(QIcon(":/tool/point"), tr("&Point Tool"), this)),
+    circleTool(new QAction(QIcon(":/tool/circel"), tr("&Circle Tool"), this)),
+    translateTool(new QAction(QIcon(":/tool/translate"), tr("&Translate Tool"), this))
 {
     setWindowTitle(tr("MatrixCreator"));
-    resize(INIT_VIEW_WIDTH, INIT_VIEW_HEIGHT);
-    setWindowState(Qt::WindowMaximized);
-    setCentralWidget(view);
-    //view->centerView();
+    resize(840, 720);//默认大小
+    setWindowState(Qt::WindowMaximized);//默认最大化
+    setCentralWidget(&view);
 
+    selectPattern(model.getCurrentPattern());
+
+    //每秒24帧
     startTimer(1000/24);
 
-    start = false;
+    //默认点选工具
+    setCursorTool(POINT);
 
-    moveViewPos = QPoint();
-    selectRect = QRect();
+    //状态栏设置
+    updateMatrixInfo();
+    mStatusBar->addPermanentWidget(mInfoLabel);
+    //设置工具栏背景色
+    QPalette statusPal(palette());
+    statusPal.setColor(QPalette::Background, MatrixColor::LUMINOSITY_2_68);
+    statusPal.setColor(QPalette::WindowText, MatrixColor::LUMINOSITY_4_204);
+    mStatusBar->setAutoFillBackground(true);
+    mStatusBar->setPalette(statusPal);
 
-    clickedPos = QPoint();
-    cursorTool = POINT;
-    lastCursorTool = CIRCLE;
-    circleCursor = QCursor(QPixmap(":/cursor/circleSelect"), 0, 0);
-    pointCursor = QCursor(QPixmap(":/cursor/pointSelect"), 0, 0);
-    translateCursor = QCursor(QPixmap(":/cursor/zoomView"), 8, 8);
+    //动作连接
+    connect(circleTool, &QAction::triggered, [this]{ setCursorTool(CIRCLE);});
+    connect(pointTool, &QAction::triggered, [this]{ setCursorTool(POINT);});
+    connect(translateTool, &QAction::triggered, [this]{ setCursorTool(TRANSLATE);});
 
-    setCursor(pointCursor);
+    //工具栏设置
+    addToolBar(Qt::LeftToolBarArea, toolBar);
+    toolBar->setIconSize(QSize(24, 24));
+    toolBar->addAction(pointTool);
+    toolBar->addAction(circleTool);
+    toolBar->addAction(translateTool);
+    circleTool->setCheckable(true);
+    pointTool->setCheckable(true);
+    translateTool->setCheckable(true);
+    pointTool->setChecked(true);
+    //设置工具栏背景色
+    QPalette ToolPal(palette());
+    ToolPal.setColor(QPalette::Background, MatrixColor::LUMINOSITY_3_136);
+    toolBar->setAutoFillBackground(true);
+    toolBar->setPalette(ToolPal);
 }
 
-MatriController::~MatriController()
+void MatrixController::timerEvent(QTimerEvent *)
 {
-    delete model;
-    model = nullptr;
-}
-
-void MatriController::mousePressEvent(QMouseEvent *event)
-{
-    //qDebug() << view->getModelPoint(event->pos());
-
-    //若不在view范围内则退出
-    if(!(view->isInView(event->pos())))
+    if(modelResume)
     {
-        selectRect = QRect();
-        view->selectedUnits(selectRect);
-        view->update();
-        return;
-    }
-
-    //只要点击事件发生且不是左键，就清除选择对象
-    if(event->button() != Qt::LeftButton)
-    {
-        if (selectRect.isValid())
-        {
-            selectRect = QRect();
-            view->selectedUnits(selectRect);
-            view->update();
-        }
-    }else if(start == false)//左键且暂停状态
-    {
-        if(cursorTool == CIRCLE)//框选
-        {
-            QPoint clickedPos = view->getUnitPoint(view->getModelPoint(event->pos()));
-            QRect selected = view->getSelectedUnitRect();
-
-            //框选状态下，单击发生在SelectBox内，则取消选框
-            if(selectRect.isValid())
-            {
-                if(selected.contains(clickedPos) &&
-                    selected.width() == view->getBaseUnitSize() &&
-                    selected.height() == view->getBaseUnitSize())
-                {
-                    //qDebug() << selected << clickedPos << "Test selectRect";
-                    selectRect = QRect();
-                    view->selectedUnits(selectRect);
-                    view->update();
-                }
-                else
-                {
-                    selectRect = view->getUnitRect(view->getModelPoint(event->pos()));//单击选择
-                    view->selectedUnits(selectRect);
-                    view->update();
-                }
-            }
-            else
-            {
-                selectRect = view->getUnitRect(view->getModelPoint(event->pos()));//单击选择
-                view->selectedUnits(selectRect);
-                view->update();
-            }
-        }
-        else if(cursorTool == POINT)//点选
-        {
-            if (selectRect.isValid())
-            {
-                selectRect = QRect();
-                view->selectedUnits(selectRect);
-                view->update();
-            }
-
-            QPoint modelPoint = view->getModelPoint(event->pos());
-            clickedPos = modelPoint;//记录刚被转换的模型坐标
-
-            //点击的单元转换为相反状态
-            model->changeModelValue(modelPoint.x(), modelPoint.y());
-            view->update();
-        }
-        else if(cursorTool == TRANSLATE)//点选
-        {
-            moveViewPos = event->pos();
-        }
-    }
-
-    if (event->button() == Qt::MidButton)
-    {
-        moveViewPos = event->pos();//点击中键记录当前坐标
-        setCursor(translateCursor);
+        (model.*(model.updateModel))();
+        ++generation;
+        updateMatrixInfo();
+        view.update();
     }
 }
 
-void MatriController::mouseMoveEvent(QMouseEvent *event)
+void MatrixController::mousePressEvent(QMouseEvent *event)
 {
-    if(!(view->isInView(event->pos())))
-        return;
+    clearSelectBox();
+    MPoint viewPos = view.inView(getPosInCentralWidget(event));
 
-    if(event->buttons() == Qt::MiddleButton)
+    //查看点击是否发生在视图中
+    if(viewPos.valid)
     {
-        QPoint point = event->pos();
+        QString clickedInfo = unitInfo.arg(viewPos.modelColumn)
+                .arg(viewPos.modelRow)
+                .arg(model.getUnitValue(viewPos.modelColumn, viewPos.modelRow));
+        mStatusBar->showMessage(clickedInfo, 4000);
 
-        //从视图外移动进视图中
-        if(moveViewPos.isNull())
+        if (event->button() == Qt::MidButton)
         {
-            moveViewPos = event->pos();
+            moveViewPos = getPosInCentralWidget(event);//点击中键记录当前坐标
+            setCursor(translateCursor);
+            return;
         }
 
-        //移动的坐标与记录的坐标相差一个基础单元以上时触发视图移动
-        if(point.x() - moveViewPos.x() >= view->getBaseUnitSize() ||
-                moveViewPos.x() - point.x() >= view->getBaseUnitSize())//Horizontal
+        if(event->button() == Qt::LeftButton)
         {
-            view->moveView((moveViewPos.x() - point.x()) / view->getBaseUnitSize(), 0);
-            moveViewPos.setX(point.x());
+            if(cursorTool == TRANSLATE)//平移
+            {
+                moveViewPos = getPosInCentralWidget(event);
+                return;
+            }
+            else if(cursorTool == CIRCLE && !modelResume)//框选
+            {
+                selectPos = viewPos.viewRect;
+                view.selectUnits(selectPos);
+                view.update();
+                return;
+            }
+            else if(cursorTool == POINT && !modelResume)//点选
+            {
+                clickedPos = viewPos;
+                model.changeModelValue(viewPos.modelColumn, viewPos.modelRow, defaultValue);
+                view.update();
+                return;
+            }
         }
-        if(point.y() - moveViewPos.y() >= view->getBaseUnitSize() ||
-                moveViewPos.y() - point.y() >= view->getBaseUnitSize())//Vertical
-        {
-            view->moveView(0, (moveViewPos.y() - point.y()) / view->getBaseUnitSize());
-            moveViewPos.setY(point.y());
-        }
-
-        view->update();
-
-        //qDebug() << point - movePos << view->getBaseUnitSize() << "Mouse move test";
     }
+}
 
-    if(event->buttons() == Qt::LeftButton && start == false)
+void MatrixController::mouseMoveEvent(QMouseEvent *event)
+{
+    MPoint viewPos = view.inView(getPosInCentralWidget(event));
+
+    if(viewPos.valid)
     {
-        if(cursorTool == CIRCLE)
+        if(event->buttons() == Qt::MiddleButton)
         {
             //从视图外移动进视图中
-            if(selectRect.isEmpty())
-            {
-                selectRect = view->getUnitRect(view->getModelPoint(event->pos()));
-                view->selectedUnits(selectRect);
-                view->update();
-            }
-
-            QRect beforePos = selectRect;//起始点
-            QRect afterPos = view->getUnitRect(view->getModelPoint(event->pos()));//终点
-
-            if(selectRect.x() < afterPos.x())//向右框选
-            {
-                if(selectRect.y() < afterPos.y())
-                    beforePos.setBottomRight(afterPos.bottomRight());//向下框选
-                else
-                    beforePos.setTopRight(afterPos.topRight());//向上框选
-            }
-            else//向左框选
-            {
-                if(selectRect.y() < afterPos.y())
-                    beforePos.setBottomLeft(afterPos.bottomLeft());//向下框选
-                else
-                    beforePos.setTopLeft(afterPos.topLeft());//向上框选
-            }
-
-            view->selectedUnits(beforePos);
-            view->notRedraw();//不要重绘模型图像
-            view->update();
-        }
-        else if(cursorTool == POINT)
-        {
-            QPoint pos = view->getModelPoint(event->pos());
-
-            //从视图外移动进视图中
-            if(clickedPos.isNull())
-                clickedPos = pos;
-
-            if(clickedPos != pos)
-            {
-                model->changeModelValue(pos.x(), pos.y());
-                view->update();
-                clickedPos = pos;
-                //考虑以一个临时区域显示并存储当前信息，鼠标释放后修改并入模型视图，用以解决延迟问题
-            }
-        }
-        else if(cursorTool == TRANSLATE)
-        {
-            QPoint point = event->pos();
-
             if(moveViewPos.isNull())
             {
-                moveViewPos = event->pos();
+                moveViewPos = viewPos.clickted;
+                return;
             }
 
-            //移动的坐标与记录的坐标相差一个基础单元以上时触发视图移动
-            if(point.x() - moveViewPos.x() >= view->getBaseUnitSize() ||
-                    moveViewPos.x() - point.x() >= view->getBaseUnitSize())//Horizontal
+            MPoint beforePos = view.inView(moveViewPos);
+
+            //移动的坐标与记录的坐标不在一个基础单元以上时触发视图移动
+            if(viewPos.modelColumn != beforePos.modelColumn)//Horizontal
             {
-                view->moveView((moveViewPos.x() - point.x()) / view->getBaseUnitSize(), 0);
-                moveViewPos.setX(point.x());
+                view.translationView(beforePos.modelColumn - viewPos.modelColumn, 0);
+                moveViewPos.setX(viewPos.clickted.x());
             }
-            if(point.y() - moveViewPos.y() >= view->getBaseUnitSize() ||
-                    moveViewPos.y() - point.y() >= view->getBaseUnitSize())//Vertical
+            if(viewPos.modelRow != beforePos.modelRow)//Vertical
             {
-                view->moveView(0, (moveViewPos.y() - point.y()) / view->getBaseUnitSize());
-                moveViewPos.setY(point.y());
+                view.translationView(0, beforePos.modelRow - viewPos.modelRow);
+                moveViewPos.setY(viewPos.clickted.y());
             }
 
-            view->update();
+            view.update();
+            return;
         }
-    }
-}
-
-void MatriController::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    //点击坐标转换到model坐标, 若不在view范围内则退出函数
-    if(!(view->isInView(event->pos())))
-        return;
-
-    if (event->buttons() == Qt::LeftButton && start == false)
-    {
-        if(cursorTool == POINT)//点选
+        else if(event->buttons() == Qt::LeftButton)
         {
-            QPoint modelPoint = view->getModelPoint(event->pos());
-            //点击的单元转换为相反状态
-            model->changeModelValue(modelPoint.x(), modelPoint.y());
-            view->update();
+            if(cursorTool == TRANSLATE)
+            {
+                //从视图外移动进视图中
+                if(moveViewPos.isNull())
+                {
+                    moveViewPos = viewPos.clickted;
+                    return;
+                }
+
+                MPoint beforePos = view.inView(moveViewPos);
+
+                //移动的坐标与记录的坐标不在一个基础单元以上时触发视图移动
+                if(viewPos.modelColumn != beforePos.modelColumn)//Horizontal
+                {
+                    view.translationView(beforePos.modelColumn - viewPos.modelColumn, 0);
+                    moveViewPos.setX(viewPos.clickted.x());
+                }
+                if(viewPos.modelRow != beforePos.modelRow)//Vertical
+                {
+                    view.translationView(0, beforePos.modelRow - viewPos.modelRow);
+                    moveViewPos.setY(viewPos.clickted.y());
+                }
+
+                view.update();
+                return;
+            }
+            else if(cursorTool == CIRCLE && modelResume == false)
+            {
+                //视图外移动进来
+                if(selectPos.isEmpty())
+                {
+                    selectPos = viewPos.viewRect;
+                    view.selectUnits(viewPos.viewRect);
+                    view.update();
+                    return;
+                }
+
+                QRect beforeRect = selectPos;//起始点
+
+                QRect afterPos = viewPos.viewRect;//终点
+                if(beforeRect.x() < afterPos.x())//向右框选
+                {
+                    if(beforeRect.y() < afterPos.y())
+                        beforeRect.setBottomRight(afterPos.bottomRight());//向下框选
+                    else
+                        beforeRect.setTopRight(afterPos.topRight());//向上框选
+                }
+                else//向左框选
+                {
+                    if(beforeRect.y() < afterPos.y())
+                        beforeRect.setBottomLeft(afterPos.bottomLeft());//向下框选
+                    else
+                        beforeRect.setTopLeft(afterPos.topLeft());//向上框选
+                }
+
+                view.selectUnits(beforeRect);
+                view.noRedrawUnits();
+                view.update();
+                return;
+            }
+            else if(cursorTool == POINT && modelResume == false)
+            {
+                //从视图外移动进视图中
+                if(!clickedPos.valid)
+                {
+                    clickedPos = viewPos;
+                    return;
+                }
+
+                if(clickedPos.modelRow != viewPos.modelRow ||
+                        clickedPos.modelColumn != viewPos.modelColumn)
+                {
+                    model.changeModelValue(viewPos.modelColumn, viewPos.modelRow, defaultValue);
+                    view.update();
+                    clickedPos = viewPos;
+                }
+            }
         }
     }
 }
 
-void MatriController::mouseReleaseEvent(QMouseEvent *event)
+void MatrixController::mouseReleaseEvent(QMouseEvent *event)
 {
     if(event->button() == Qt::MiddleButton)
     {
-        //qDebug() << "mouveViewPos = 0";
         moveViewPos = QPoint();
         switch (cursorTool)
         {
@@ -269,117 +264,137 @@ void MatriController::mouseReleaseEvent(QMouseEvent *event)
         default:
             break;
         }
+        view.overRangeLineOff();
+        view.update();
+    }
+
+    if(event->button() == Qt::LeftButton)
+    {
+        if(!moveViewPos.isNull())
+            moveViewPos = QPoint();
+
+        clickedPos.valid = false;
+
+        if(selectPos.isValid())
+            selectPos = QRect();
+
+        if(cursorTool == TRANSLATE)
+        {
+            view.overRangeLineOff();
+            view.update();
+        }
     }
 }
 
-void MatriController::timerEvent(QTimerEvent *)
+void MatrixController::keyPressEvent(QKeyEvent *event)
 {
-    //qDebug() << "-->In the timer";
+    ++pressKeys;//当前按键数加1
 
-    if(start)
+    //ctrl+' 网格开关
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Apostrophe && pressKeys == 2)
     {
-        model->calculusModelThread();
-        view->update();
-    }
-    else if(view->currentStatus())
-    {
-        view->notRedraw();
-        view->update();
-    }
-
-}
-
-void MatriController::keyPressEvent(QKeyEvent *event)
-{
-    //qDebug() << event->key();
-
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Apostrophe)//ctrl+; 参考线开关
-    {
-        view->referenceLineOnOff();
-        //view->notRedraw(); //不要更新一级参考线
-        view->update();
-    }
-
-    if(event->key() == Qt::Key_Tab)//Tab 帧率显示开关
-    {
-        view->FPSDisplayOnOff();
-        view->update();
-    }
-
-    if(event->key() == Qt::Key_Z)//平移
-    {
-        lastCursorTool = cursorTool;
-        cursorTool = TRANSLATE;
-        setCursor(translateCursor);
-    }
-
-    if(event->key() == Qt::Key_Plus)//放大
-    {
-        view->zoomView(width()/2, height()/2, true);
-        view->update();
-    }
-    if(event->key() == Qt::Key_Minus)//缩小
-    {
-        view->zoomView(width()/2, height()/2, false);
-        view->update();
-    }
-
-    if(start == true && event->key() != Qt::Key_Space)//开始状态下只接收空格
-        return;
-
-    if(event->key() == Qt::Key_Space)//空格 开始暂停
-    {
-        start = !start;
-    }
-
-    if(event->key() == Qt::Key_F12)//拍照
-    {
-        view->takePicture();
-        view->startAnimation();
+        view.gridOnOff();
+        view.update();
         return;
     }
+    //ctrl+; 参考线开关
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Semicolon && pressKeys == 2)
+    {
+        view.referenceLineOnOff();
+        view.update();
+        return;
+    }
+    //Tab 帧率显示开关
+    if(event->key() == Qt::Key_Tab && pressKeys == 1)
+    {
+        view.fpsOnOff();
+        view.update();
+        return;
+    }
+    //+ 放大
+    if(event->key() == Qt::Key_Plus && pressKeys == 1)
+    {
+        clearSelectBox();
+        view.zoomView(view.inView(QPoint(width()/2, height()/2)), MatrixView::ZoomIn);
+        view.update();
+        return;
+    }
+    //- 缩小
+    if(event->key() == Qt::Key_Minus && pressKeys == 1)
+    {
+        clearSelectBox();
+        view.zoomView(view.inView(QPoint(width()/2, height()/2)), MatrixView::ZoomOut);
+        view.update();
+        return;
+    }
+    //Z 平移工具
+    if(event->key() == Qt::Key_Z && pressKeys == 1)
+    {
+        setCursorTool(TRANSLATE);
+        return;
+    }
+    //空格 开始暂停
+    if(event->key() == Qt::Key_Space && pressKeys == 1)
+    {
+        clearSelectBox();
+        modelResume = !modelResume;
+        return;
+    }
+
+    //模型运行时不处理以下事件
+    if(modelResume)
+        return;
 
     //键盘事件发生时，先处理选择对象
-    if (selectRect.isValid())
+    if (view.getSelectViewRect().isValid())
     {
-        if(event->modifiers() == Qt::ShiftModifier && event->key() == Qt::Key_F5)//shift+F5 反向选中
+        //shift+F5 填充默认值
+        QRect selectArea = view.getSelectUnitRect();
+        if(event->modifiers() == Qt::ShiftModifier && event->key() == Qt::Key_F5 && pressKeys == 2)
         {
-            QRect models = view->getSelectedModelRect();
-            //qDebug() << models << "Fill Selected models.";
-
-            for(int i = models.left(); i <= models.right(); ++i)
+            for(int i = selectArea.left(); i <= selectArea.right(); ++i)
             {
-                for(int j = models.top(); j <= models.bottom(); ++j)
+                for(int j = selectArea.top(); j <= selectArea.bottom(); ++j)
                 {
-                    //qDebug() << i << j;
-                    model->changeModelValue(i, j);
+                    model.changeModelValue(i, j, defaultValue);
                 }
             }
-            view->selectedUnits(QRect());//之后清除选框
-            view->update();
+            view.selectUnits(QRect());//之后清除选框
+            view.update();
+            return;
         }
-        else if(event->key() == Qt::Key_Delete)//delete 删除选中
+        //delete 删除选中
+        else if(event->key() == Qt::Key_Delete && pressKeys == 1)
         {
-            QRect selectArea = view->getSelectedModelRect();
-            model->clearModel(selectArea.left(), selectArea.top(), selectArea.width(), selectArea.height());
-            //qDebug() << view->getSelectedModelRect();
-            view->update();
-        }
-        else if(event->modifiers() != Qt::ShiftModifier)//不是shift键都会清除选框
-        {
-            selectRect = QRect();
-            view->selectedUnits(selectRect);
-            view->update();
+            model.clearUnit(selectArea.left(), selectArea.top(), selectArea.width(), selectArea.height());
+            view.update();
+            return;
         }
     }
 
-    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Delete)//ctrl+delete 清除全部
+    //F12 拍照
+    if(event->key() == Qt::Key_F12 && pressKeys == 1)
     {
-        model->clearAllModel();
-        view->update();
+        QString s = QFileDialog::getSaveFileName(this,
+                                                 "Image Save As",
+                                                 "./",
+                                                 "*.png");
+        if(!s.isEmpty())
+            //view.takePicture(s);
+
+        clearSelectBox();
+        return;
     }
 
-    if(event->key() == Qt::Key_Control)//ctrl 暂切选择工具
+    //不是shift键都会清除选框
+    if(event->modifiers() != Qt::ShiftModifier)
+    {
+        clearSelectBox();//之后清除选框
+        view.update();
+    }
+
+    //ctrl 暂切选择工具
+    if(event->key() == Qt::Key_Control && pressKeys == 1)
     {
         CursorTool temp = lastCursorTool;
         lastCursorTool = cursorTool;
@@ -400,35 +415,58 @@ void MatriController::keyPressEvent(QKeyEvent *event)
             break;
         }
     }
-    if(event->key() == Qt::Key_A)//a 点选
+    //A 点选工具
+    if(event->key() == Qt::Key_A && pressKeys == 1)
     {
-        lastCursorTool = cursorTool;
-        cursorTool = POINT;
-        setCursor(pointCursor);
+        setCursorTool(POINT);
+        return;
     }
-    if(event->key() == Qt::Key_V)//v 框选
+    //V 框选工具
+    if(event->key() == Qt::Key_V && pressKeys == 1)
     {
-        lastCursorTool = cursorTool;
-        cursorTool = CIRCLE;
-        setCursor(circleCursor);
+        setCursorTool(CIRCLE);
+        return;
     }
+    //X 交换两个默认值
+    if(event->key() == Qt::Key_X && pressKeys == 1)
+    {
+        defaultValue = dfv2;
+        dfv2 = dfv1;
+        dfv1 = defaultValue;
+        updateMatrixInfo();
 
-    if(event->key() == Qt::Key_F4)//居中
-    {
-        view->centerView();
-        view->update();
+        return;
     }
-
-    if(event->key() == Qt::Key_Right)//单步前进
+    //ctrl+delete 清除全部
+    if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Delete && pressKeys == 2)
     {
-        model->calculusModelThread();
-        view->update();
+        model.clearAllUnit();
+        view.update();
+        return;
+    }
+    //模型居中
+    if(event->key() == Qt::Key_F4 && pressKeys == 1)
+    {
+        view.moveToCoordinate();
+        view.update();
+        return;
+    }
+    //→ 单步前进
+    if(event->key() == Qt::Key_Right && pressKeys == 1)
+    {
+        (model.*(model.updateModel))();
+        updateMatrixInfo();
+        view.update();
+        return;
     }
 }
 
-void MatriController::keyReleaseEvent(QKeyEvent *event)
+void MatrixController::keyReleaseEvent(QKeyEvent *event)
 {
-    if(start)
+    --pressKeys;//松开一个按键
+
+    //模型运行时不处理以下事件
+    if(modelResume)
         return;
 
     //松开ctrl后恢复原本鼠标工具
@@ -452,42 +490,113 @@ void MatriController::keyReleaseEvent(QKeyEvent *event)
         default:
             break;
         }
+        return;
     }
 }
 
-void MatriController::wheelEvent(QWheelEvent *event)
+void MatrixController::wheelEvent(QWheelEvent *event)
 {
-    //只要事件发生就清除选择对象
-    if (selectRect.isValid())
+    clearSelectBox();
+
+    MPoint viewPos = view.inView(getPosInCentralWidget(event));
+    if(viewPos.valid)
     {
-        selectRect = QRect();
-        view->selectedUnits(selectRect);
-        view->update();
+        if(event->delta() > 0)
+            view.zoomView(viewPos, MatrixView::ZoomIn);//放大
+        else
+            view.zoomView(viewPos, MatrixView::ZoomOut);//缩小
+
+        updateMatrixInfo();
+
+        //缩放后鼠标位置处于view中
+        viewPos = view.inView(getPosInCentralWidget(event));
+        if(viewPos.valid)
+        {
+            //获取鼠标所处单元的中心点坐标和view与全局坐标的偏差值，并把光标移到该坐标
+            QPoint unitCtrPos = viewPos.viewRect.center();
+            QPoint offset = event->globalPos() - getPosInCentralWidget(event) + view.getViewOffsetPoint();
+            cursor().setPos(unitCtrPos + offset);
+        }
+        view.update();
     }
-
-    int clickedX = event->pos().x();
-    int clickedY = event->pos().y();
-
-    //滚动时指针的坐标转换到model坐标, 若不在view范围内则调用父类同名函数处理
-    if(!(view->isInView(clickedX, clickedY)))
+    else
     {
         QMainWindow::wheelEvent(event);
         return;
     }
-    
-    if(event->delta() > 0)
-        view->zoomView(clickedX, clickedY, true);//缩小
-    else
-        view->zoomView(clickedX, clickedY, false);//放大
+}
 
-    //缩放后鼠标位置处于view中
-    if(view->isInView(event->pos()))
+void MatrixController::selectPattern(MatrixModel::ModelPattern p)
+{
+    switch(p)
     {
-        //获取鼠标所处单元的中心点坐标和view与全局坐标的偏差值，并把光标移到该坐标
-        QPoint unitPoint = view->getUnitCentralPoint(view->getModelPoint(clickedX, clickedY));
-        QPoint offset = event->globalPos() - event->pos() + view->getViewOffsetPoint();
-        cursor().setPos(unitPoint + offset);
-        //qDebug() << event->globalPos() << event->pos() << view->getviewOffsetPoint() << offset << "G-P-V";
-        //qDebug() << cursor().pos() << "After";
+    case MatrixModel::LifeGameTSF:
+        dfv1 = 1;
+        dfv2 = 0;
+        defaultValue = dfv1;
+        break;
+    case MatrixModel::LifeGameCCL:
+        dfv1 = 3;
+        dfv2 = 0;
+        defaultValue = dfv1;
+        break;
+    case MatrixModel::LifeGameTRC:
+        dfv1 = 3;
+        dfv2 = 0;
+        defaultValue = dfv1;
+        break;
+    default:
+        dfv1 = 0;
+        dfv2 = 0;
+        defaultValue = dfv1;
+        break;
+    }
+}
+
+
+void MatrixController::setCursorTool(MatrixController::CursorTool tool)
+{
+    lastCursorTool = cursorTool;
+    cursorTool = tool;
+
+    switch (lastCursorTool)
+    {
+    case POINT:
+        pointTool->setChecked(false);
+        break;
+    case CIRCLE:
+        circleTool->setChecked(false);
+        break;
+    case TRANSLATE:
+        translateTool->setChecked(false);
+        break;
+    default:
+#ifndef M_NO_DEBUG
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "error: undefined cursor tool" << cursorTool;
+#endif
+        break;
+    }
+
+    switch (cursorTool)
+    {
+    case POINT:
+        setCursor(pointCursor);
+        pointTool->setChecked(true);
+        break;
+    case CIRCLE:
+        setCursor(circleCursor);
+        circleTool->setChecked(true);
+        break;
+    case TRANSLATE:
+        setCursor(translateCursor);
+        translateTool->setChecked(true);
+        break;
+    default:
+#ifndef M_NO_DEBUG
+        qDebug() << "Log in" << __FILE__ << ":" << __FUNCTION__ << " line: " << __LINE__
+                 << "error: undefined cursor tool" << cursorTool;
+#endif
+        break;
     }
 }

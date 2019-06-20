@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/texts">
+        <file alias="0">icons/texts/0.png</file>
+        <file alias="1">icons/texts/1.png</file>
+        <file alias="2">icons/texts/2.png</file>
+        <file alias="3">icons/texts/3.png</file>
+        <file alias="4">icons/texts/4.png</file>
+        <file alias="5">icons/texts/5.png</file>
+        <file alias="6">icons/texts/6.png</file>
+        <file alias="7">icons/texts/7.png</file>
+        <file alias="8">icons/texts/8.png</file>
+        <file alias="9">icons/texts/9.png</file>
+        <file alias="FPS">icons/texts/FPS.png</file>
+        <file alias="point">icons/texts/point.png</file>
+    </qresource>
+    <qresource prefix="/cursor">
+        <file alias="circle">icons/cursor/circle.png</file>
+        <file alias="point">icons/cursor/point.png</file>
+        <file alias="translate">icons/cursor/translate.png</file>
+    </qresource>
+    <qresource prefix="/tool">
+        <file alias="circel">icons/tool/circle.png</file>
+        <file alias="point">icons/tool/point.png</file>
+        <file alias="translate">icons/tool/translate.png</file>
+    </qresource>
+</RCC>
