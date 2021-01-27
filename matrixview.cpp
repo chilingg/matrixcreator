@@ -14,7 +14,7 @@ MatrixView::MatrixView(MatrixModel *model, QWidget *parent)
 {
     //Set window backgroundcolor
     QPalette pal = palette();
-    pal.setColor(QPalette::Background, VIEW::LUMINOSITY_1_51);
+    pal.setColor(QPalette::Window, VIEW::LUMINOSITY_1_51);
     setAutoFillBackground(true);
     setPalette(pal);
 
@@ -353,7 +353,6 @@ void MatrixView::paintEvent(QPaintEvent *)
             imageWidth = image.width();
         }
 
-        auto modalP = model->getModel();
         //绘制模型图像
         for(int i = 0; i < viewColumn; ++i)
         {
@@ -362,7 +361,7 @@ void MatrixView::paintEvent(QPaintEvent *)
                 QRgb color;
 
                 //Get modeldata and select color
-                int value = modalP[i + modelOffsetX][j + modelOffsetY];
+                int value = model->value(i + modelOffsetX, j + modelOffsetY);
                 if(value == died)
                     color = dieColor;
                 else if(value == lived)
@@ -634,8 +633,6 @@ void MatrixView::takePicture()
     {
         QImage picture(selectedUnitRect.width(), selectedUnitRect.height(), QImage::Format_RGB32);
         picture.fill(VIEW::LUMINOSITY_1_17);
-        //qDebug() << selectedUnitRect;
-        auto modalP = model->getModel();
 
         //绘制模型图像
         int modelWidth = selectedUnitRect.width() / baseUnitSize;
@@ -649,7 +646,7 @@ void MatrixView::takePicture()
                 //Get modeldata and select color
                 int x = i + modelOffsetX + selectedUnitRect.left()/baseUnitSize;
                 int y = j + modelOffsetY + selectedUnitRect.top()/baseUnitSize;
-                int value = modalP[x][y];
+                int value = model->value(x, y);
                 if(value == died)
                     color = dieColor;
                 else if(value == lived)

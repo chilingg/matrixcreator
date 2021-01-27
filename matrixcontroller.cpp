@@ -3,8 +3,8 @@
 
 MatriController::MatriController(QWidget *parent)
     : QMainWindow(parent),
-      model(new MatrixModel()),
-      view(new MatrixView(model, this))
+      model(std::make_unique<MatrixModel>()),
+      view(new MatrixView(model.get(), this))
 {
     setWindowTitle(tr("MatrixCreator"));
     resize(INIT_VIEW_WIDTH, INIT_VIEW_HEIGHT);
@@ -27,12 +27,6 @@ MatriController::MatriController(QWidget *parent)
     translateCursor = QCursor(QPixmap(":/cursor/zoomView"), 8, 8);
 
     setCursor(pointCursor);
-}
-
-MatriController::~MatriController()
-{
-    delete model;
-    model = nullptr;
 }
 
 void MatriController::mousePressEvent(QMouseEvent *event)
@@ -103,7 +97,7 @@ void MatriController::mousePressEvent(QMouseEvent *event)
             clickedPos = modelPoint;//记录刚被转换的模型坐标
 
             //点击的单元转换为相反状态
-            model->changeModelValue(modelPoint.x(), modelPoint.y());
+            model->setValue(modelPoint.x(), modelPoint.y(), !model->value(modelPoint.x(), modelPoint.y()));
             view->update();
         }
         else if(cursorTool == TRANSLATE)//点选
@@ -112,7 +106,7 @@ void MatriController::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    if (event->button() == Qt::MidButton)
+    if (event->button() == Qt::MiddleButton)
     {
         moveViewPos = event->pos();//点击中键记录当前坐标
         setCursor(translateCursor);
@@ -197,7 +191,7 @@ void MatriController::mouseMoveEvent(QMouseEvent *event)
 
             if(clickedPos != pos)
             {
-                model->changeModelValue(pos.x(), pos.y());
+                model->setValue(pos.x(), pos.y(), !model->value(pos.x(), pos.y()));
                 view->update();
                 clickedPos = pos;
                 //考虑以一个临时区域显示并存储当前信息，鼠标释放后修改并入模型视图，用以解决延迟问题
@@ -243,7 +237,7 @@ void MatriController::mouseDoubleClickEvent(QMouseEvent *event)
         {
             QPoint modelPoint = view->getModelPoint(event->pos());
             //点击的单元转换为相反状态
-            model->changeModelValue(modelPoint.x(), modelPoint.y());
+            model->setValue(modelPoint.x(), modelPoint.y(), !model->value(modelPoint.x(), modelPoint.y()));
             view->update();
         }
     }
@@ -274,11 +268,9 @@ void MatriController::mouseReleaseEvent(QMouseEvent *event)
 
 void MatriController::timerEvent(QTimerEvent *)
 {
-    //qDebug() << "-->In the timer";
-
     if(start)
     {
-        model->calculusModelThread();
+        model->updateModel();
         view->update();
     }
     else if(view->currentStatus())
@@ -347,21 +339,14 @@ void MatriController::keyPressEvent(QKeyEvent *event)
             QRect models = view->getSelectedModelRect();
             //qDebug() << models << "Fill Selected models.";
 
-            for(int i = models.left(); i <= models.right(); ++i)
-            {
-                for(int j = models.top(); j <= models.bottom(); ++j)
-                {
-                    //qDebug() << i << j;
-                    model->changeModelValue(i, j);
-                }
-            }
+            model->setRangeValue(models.left(), models.top(), models.width(), models.height(), 1);
             view->selectedUnits(QRect());//之后清除选框
             view->update();
         }
         else if(event->key() == Qt::Key_Delete)//delete 删除选中
         {
             QRect selectArea = view->getSelectedModelRect();
-            model->clearModel(selectArea.left(), selectArea.top(), selectArea.width(), selectArea.height());
+            model->setRangeValue(selectArea.left(), selectArea.top(), selectArea.width(), selectArea.height(), 0);
             //qDebug() << view->getSelectedModelRect();
             view->update();
         }
@@ -375,7 +360,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
 
     if(event->modifiers() == Qt::ControlModifier && event->key() == Qt::Key_Delete)//ctrl+delete 清除全部
     {
-        model->clearAllModel();
+        model->clear();
         view->update();
     }
 
@@ -421,7 +406,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_Right)//单步前进
     {
-        model->calculusModelThread();
+        model->updateModel();
         view->update();
     }
 }
@@ -465,8 +450,8 @@ void MatriController::wheelEvent(QWheelEvent *event)
         view->update();
     }
 
-    int clickedX = event->pos().x();
-    int clickedY = event->pos().y();
+    int clickedX = event->position().x();
+    int clickedY = event->position().y();
 
     //滚动时指针的坐标转换到model坐标, 若不在view范围内则调用父类同名函数处理
     if(!(view->isInView(clickedX, clickedY)))
@@ -475,7 +460,7 @@ void MatriController::wheelEvent(QWheelEvent *event)
         return;
     }
     
-    if(event->delta() > 0)
+    if(event->angleDelta().y() > 0)
         view->zoomView(clickedX, clickedY, true);//缩小
     else
         view->zoomView(clickedX, clickedY, false);//放大

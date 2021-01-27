@@ -24,7 +24,7 @@ class MatriController : public QMainWindow
 
 public:
     MatriController(QWidget *parent = 0);
-    ~MatriController();
+    ~MatriController() = default;
 
 protected:
     void mousePressEvent(QMouseEvent *event);
@@ -37,7 +37,7 @@ protected:
     void wheelEvent(QWheelEvent *event);
 
 private:
-    MatrixModel *model;
+    std::unique_ptr<MatrixModel> model;
     MatrixView *view;
     bool start;
     QPoint moveViewPos;

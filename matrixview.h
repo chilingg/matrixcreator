@@ -93,7 +93,7 @@ private:
     int FrameSum;
     bool fpsOnOff;
     //fps计算2
-    QTime time;
+    QElapsedTimer time;
 
     //动画
     bool animationOnOff = false;
