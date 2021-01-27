@@ -2,7 +2,6 @@
 #define MATRIXMODEL_H
 
 #include "constants.h"
-#include <array>
 #include <vector>
 #include <atomic>
 #include <functional>
@@ -30,10 +29,9 @@ private:
 
     std::atomic_size_t updateIndex_;
     std::atomic_bool update_, done_;
-    std::function<int(int, int, int, int, int, int, int, int, int)> updateFunc_;
     std::vector<std::thread> threads_;
-    std::array<int, WORLDSIZE * WORLDSIZE> cModel_;
-    std::array<int, WORLDSIZE * WORLDSIZE> tModel_;
+    std::unique_ptr<int[]> cModel_;
+    std::unique_ptr<int[]> tModel_;
 };
 
 #endif // MATRIXMODEL_H

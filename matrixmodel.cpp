@@ -6,9 +6,8 @@ MatrixModel::MatrixModel():
     updateIndex_(0),
     update_(false),
     done_(false),
-    updateFunc_(lifeGameRule),
-    cModel_{},
-    tModel_{}
+    cModel_(std::make_unique<int[]>(WORLDSIZE * WORLDSIZE)),
+    tModel_(std::make_unique<int[]>(WORLDSIZE * WORLDSIZE))
 {
     unsigned tNum = std::thread::hardware_concurrency() > 1 ? std::thread::hardware_concurrency() - 1 : 0;
     threads_.reserve(tNum);
@@ -27,13 +26,14 @@ MatrixModel::MatrixModel():
 
 MatrixModel::~MatrixModel()
 {
+    done_ = true;
     for(auto & thread : threads_)
         thread.join();
 }
 
 int MatrixModel::value(int x, int y)
 {
-    return cModel_.at(y * WORLDSIZE + x);
+    return cModel_[y * WORLDSIZE + x];
 }
 
 void MatrixModel::updateModel()
@@ -67,12 +67,12 @@ void MatrixModel::setRangeValue(size_t x, size_t y, size_t widht, size_t height,
 
 void MatrixModel::fill(int value)
 {
-    cModel_.fill(value);
+    std::fill_n(cModel_.get(), WORLDSIZE * WORLDSIZE, value);
 }
 
 void MatrixModel::clear()
 {
-    cModel_.fill(0);
+    std::fill_n(cModel_.get(), WORLDSIZE * WORLDSIZE, 0);
 }
 
 int MatrixModel::lifeGameRule(int tl, int tm, int tr, int ml, int mm, int mr, int bl, int bm, int br)
@@ -112,7 +112,7 @@ void MatrixModel::update()
             size_t l = x == 0 ? WORLDSIZE - 1 : x - 1;
             size_t r = x == WORLDSIZE - 1 ? 0 : x + 1;
 
-            tModel_[y + x] = updateFunc_(cModel_[t + l], cModel_[t + x], cModel_[t + r],
+            tModel_[y + x] = lifeGameRule(cModel_[t + l], cModel_[t + x], cModel_[t + r],
                     cModel_[y + l], cModel_[y + x], cModel_[y + r],
                     cModel_[b + l], cModel_[b + x], cModel_[b + r]);
         }
