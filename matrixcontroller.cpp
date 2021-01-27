@@ -270,7 +270,7 @@ void MatriController::timerEvent(QTimerEvent *)
 {
     if(start)
     {
-        model->updateModel();
+        model->updateInThread();
         view->update();
     }
     else if(view->currentStatus())
@@ -406,7 +406,7 @@ void MatriController::keyPressEvent(QKeyEvent *event)
 
     if(event->key() == Qt::Key_Right)//单步前进
     {
-        model->updateModel();
+        model->updateInThread();
         view->update();
     }
 }
