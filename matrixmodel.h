@@ -12,7 +12,7 @@ class MatrixModel
 {
 public:
     MatrixModel();
-    ~MatrixModel() = default;
+    ~MatrixModel();
 
     int value(int x, int y); //依据坐标返回单个数据
 
@@ -29,6 +29,7 @@ private:
     void update();
 
     std::atomic_size_t updateIndex_;
+    std::atomic_bool update_, done_;
     std::function<int(int, int, int, int, int, int, int, int, int)> updateFunc_;
     std::vector<std::thread> threads_;
     std::array<int, WORLDSIZE * WORLDSIZE> cModel_;

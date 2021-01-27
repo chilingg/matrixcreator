@@ -3,11 +3,9 @@
 
 #include <cstddef>
 
-const int WORLDSIZE = 1000;
+const int WORLDSIZE = 4096;
 
-const int INIT_VIEW_WIDTH = 1000;
-const int INIT_VIEW_HEIGHT = 1000;
-
-constexpr size_t THREADS = 4;
+const int INIT_VIEW_WIDTH = 840;
+const int INIT_VIEW_HEIGHT = 720;
 
 #endif // CONSTANTS_H

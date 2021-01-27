@@ -4,6 +4,8 @@
 
 MatrixModel::MatrixModel():
     updateIndex_(0),
+    update_(false),
+    done_(false),
     updateFunc_(lifeGameRule),
     cModel_{},
     tModel_{}
@@ -12,7 +14,21 @@ MatrixModel::MatrixModel():
     threads_.reserve(tNum);
 
     for(unsigned i = 0; i < tNum; ++i)
-        threads_.emplace_back();
+        threads_.emplace_back([this]{
+            while(!done_)
+            {
+                if(update_)
+                    update();
+                else
+                    std::this_thread::yield();
+            }
+        });
+}
+
+MatrixModel::~MatrixModel()
+{
+    for(auto & thread : threads_)
+        thread.join();
 }
 
 int MatrixModel::value(int x, int y)
@@ -22,13 +38,8 @@ int MatrixModel::value(int x, int y)
 
 void MatrixModel::updateModel()
 {
-    for(auto & thread : threads_)
-        thread = std::thread([this] { update(); });
-
+    update_ = true;
     update();
-
-    for(auto & thread : threads_)
-        thread.join();
 
     cModel_.swap(tModel_);
     updateIndex_ = 0;
@@ -42,7 +53,7 @@ void MatrixModel::setValue(size_t x, size_t y, int value)
 void MatrixModel::setRangeValue(size_t x, size_t y, size_t widht, size_t height, int value)
 {
 # ifndef NDEBUG
-    if(x < 0 || y < 0 || x + widht > WORLDSIZE || y + height > WORLDSIZE)
+    if(x + widht > WORLDSIZE || y + height > WORLDSIZE)
         throw "Invalid range!";
 #endif
     for(size_t i = x; i < widht + x; ++i)
@@ -90,19 +101,23 @@ int MatrixModel::lifeGameRule(int tl, int tm, int tr, int ml, int mm, int mr, in
 
 void MatrixModel::update()
 {
-    for(size_t i = updateIndex_++; i < WORLDSIZE * WORLDSIZE; i = updateIndex_++)
+    for(size_t i = updateIndex_++; i < WORLDSIZE; i = updateIndex_++)
     {
-        size_t x = i % WORLDSIZE, y = i / WORLDSIZE;
+        size_t y = i * WORLDSIZE;
+        for(size_t x = 0; x < WORLDSIZE; ++x)
+        {
+            size_t t = (i == 0 ? WORLDSIZE - 1 : i - 1) * WORLDSIZE;
+            size_t b = (i == WORLDSIZE - 1 ? 0 : i + 1) * WORLDSIZE;
 
-        size_t t = (y == 0 ? WORLDSIZE - 1 : y - 1) * WORLDSIZE;
-        size_t b = (y == WORLDSIZE - 1 ? 0 : y + 1) * WORLDSIZE;
-        y *= WORLDSIZE;
+            size_t l = x == 0 ? WORLDSIZE - 1 : x - 1;
+            size_t r = x == WORLDSIZE - 1 ? 0 : x + 1;
 
-        size_t l = x == 0 ? WORLDSIZE - 1 : x - 1;
-        size_t r = x == WORLDSIZE - 1 ? 0 : x + 1;
-
-        tModel_[i] = updateFunc_(cModel_[t + l], cModel_[t + x], cModel_[t + r],
-                cModel_[y + l], cModel_[i], cModel_[y + r],
-                cModel_[b + l], cModel_[b + x], cModel_[b + r]);
+            tModel_[y + x] = updateFunc_(cModel_[t + l], cModel_[t + x], cModel_[t + r],
+                    cModel_[y + l], cModel_[y + x], cModel_[y + r],
+                    cModel_[b + l], cModel_[b + x], cModel_[b + r]);
+        }
     }
+
+    bool b = true;
+    update_.compare_exchange_weak(b, false);
 }
