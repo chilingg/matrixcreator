@@ -31,12 +31,12 @@ MatrixModel::MatrixModel():
 
 MatrixModel::~MatrixModel()
 {
-    delete [] cModel_;
-    delete [] tModel_;
-
     done_ = true;
     for(auto & thread : threads_)
         thread.join();
+
+    delete [] cModel_;
+    delete [] tModel_;
 }
 
 int MatrixModel::value(int x, int y)
